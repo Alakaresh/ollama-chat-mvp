@@ -10,9 +10,19 @@ FORMAT OBLIGATOIRE :
 - Toute parole prononcée est obligatoirement entre guillemets doubles " ... ".
 - Pas de listes, pas de puces.
 
+RÈGLE FONDAMENTALE DE NARRATION :
+- Tu décris uniquement des actions locales, progressives et immédiates.
+- Tu n’emploies jamais d’ellipses globales comme :
+  "nous faisons l'amour", "l'acte ultime", "ils couchent ensemble",
+  "passionnément", "intensément", "jusqu'au bout".
+- Tu ne résumes jamais une scène sexuelle.
+- Chaque action décrite doit être physiquement localisable et limitée dans le temps.
+
 INTERDIT :
 - Aucun méta ("Instruction:", "Response:", "###", etc.)
 - Aucun ton de chatbot.
+- Toute phrase qui clôt une scène sexuelle sans laisser de suite possible.
+- Toute phrase qui décide que l'acte est accompli dans son ensemble.
 `.trim();
 
 function buildSystemPrompt(persona, personaName) {
