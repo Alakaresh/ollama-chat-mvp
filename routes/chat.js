@@ -3,8 +3,6 @@ const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const {
   buildSystemPrompt,
   sanitizeAssistantText,
-  looksNarrativeOk,
-  REWRITE_INSTRUCTION,
 } = require("../services/globalStyle");
 
 function chatRouter() {
@@ -33,20 +31,6 @@ function chatRouter() {
       });
 
       text = sanitizeAssistantText(text);
-
-      // 2) rewrite si besoin (format Linky/Lilly)
-      if (!looksNarrativeOk(text)) {
-        text = await ollamaChatOnce({
-          model,
-          options,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: REWRITE_INSTRUCTION + "\n\nTEXTE:\n" + text },
-          ],
-        });
-
-        text = sanitizeAssistantText(text);
-      }
 
       res.json({ content: text });
     } catch (e) {
@@ -91,20 +75,6 @@ function chatRouter() {
       });
 
       let cleaned = sanitizeAssistantText(full);
-
-      if (!looksNarrativeOk(cleaned)) {
-        cleaned = await ollamaChatOnce({
-          model,
-          options,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: REWRITE_INSTRUCTION + "\n\nTEXTE:\n" + cleaned },
-          ],
-        });
-
-        cleaned = sanitizeAssistantText(cleaned);
-        sendEvent({ type: "replace", content: cleaned });
-      }
 
       sendEvent({ type: "done" });
     } catch (e) {
