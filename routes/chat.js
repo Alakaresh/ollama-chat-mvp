@@ -74,8 +74,7 @@ function chatRouter() {
         },
       });
 
-      let cleaned = sanitizeAssistantText(full);
-
+      sanitizeAssistantText(full);
       sendEvent({ type: "done" });
     } catch (e) {
       sendEvent({ type: "error", error: e.message });
