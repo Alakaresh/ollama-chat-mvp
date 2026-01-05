@@ -151,33 +151,35 @@ function setQuotedContent(container, text) {
 }
 
 function append(role, text) {
-  const p = document.createElement("p");
-  p.style.margin = "6px 0";
+  const messageContainer = document.createElement("div");
+  messageContainer.className = "message-container " + (role === "user" ? "user-message" : "assistant-message");
 
-  const who = document.createElement("b");
-  who.textContent = role + ": ";
-  p.appendChild(who);
+  const messageBubble = document.createElement("div");
+  messageBubble.className = "message-bubble";
 
   const message = document.createElement("span");
   message.className = "chat-text";
   setQuotedContent(message, text);
-  p.appendChild(message);
-  chatBox.appendChild(p);
+
+  messageBubble.appendChild(message);
+  messageContainer.appendChild(messageBubble);
+  chatBox.appendChild(messageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function appendStreamingAssistant(name) {
-  const p = document.createElement("p");
-  p.style.margin = "6px 0";
+  const messageContainer = document.createElement("div");
+  messageContainer.className = "message-container assistant-message";
 
-  const who = document.createElement("b");
-  who.textContent = `${name || "assistant"}: `;
-  p.appendChild(who);
+  const messageBubble = document.createElement("div");
+  messageBubble.className = "message-bubble";
 
   const message = document.createElement("span");
   message.className = "chat-text";
-  p.appendChild(message);
-  chatBox.appendChild(p);
+
+  messageBubble.appendChild(message);
+  messageContainer.appendChild(messageBubble);
+  chatBox.appendChild(messageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 
   return message;
@@ -210,6 +212,7 @@ async function loadModels() {
     // choix par défaut (si dispo)
     const preferred = models.find((m) => m.includes("mythomax")) || models[0];
     if (preferred) modelSelect.value = preferred;
+    sendBtn.disabled = false;
   } catch (e) {
     console.error("Impossible de charger les modèles:", e);
     const opt = document.createElement("option");
