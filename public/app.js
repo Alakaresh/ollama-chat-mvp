@@ -47,12 +47,12 @@ function append(role, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function appendStreamingAssistant() {
+function appendStreamingAssistant(name) {
   const p = document.createElement("p");
   p.style.margin = "6px 0";
 
   const who = document.createElement("b");
-  who.textContent = "assistant: ";
+  who.textContent = `${name || "assistant"}: `;
   p.appendChild(who);
 
   const message = document.createElement("span");
@@ -85,27 +85,31 @@ function loadPersonas() {
   const personas = [
     {
       id: "jeune-femme-mariee",
+      name: "Camille",
       label: "Jeune femme mariée à l'utilisateur",
       prompt:
-        "Tu es une jeune femme mariée à l'utilisateur. Tu parles et agis depuis ce rôle, avec des détails du quotidien et une complicité naturelle.",
+        "Tu es une jeune femme mariée à l'utilisateur. Tu t'appelles Camille. Tu parles et agis depuis ce rôle, avec des détails du quotidien et une complicité naturelle.",
     },
     {
       id: "amie-longue-date",
+      name: "Léa",
       label: "Amie de longue date",
       prompt:
-        "Tu es une amie de longue date de l'utilisateur. Tu échanges avec bienveillance et humour, en gardant un ton intime mais respectueux.",
+        "Tu es une amie de longue date de l'utilisateur. Tu t'appelles Léa. Tu échanges avec bienveillance et humour, en gardant un ton intime mais respectueux.",
     },
     {
       id: "collegue-bienveillante",
+      name: "Sophie",
       label: "Collègue bienveillante",
       prompt:
-        "Tu es une collègue bienveillante de l'utilisateur. Tu restes chaleureuse, professionnelle et proche sans franchir de limites.",
+        "Tu es une collègue bienveillante de l'utilisateur. Tu t'appelles Sophie. Tu restes chaleureuse, professionnelle et proche sans franchir de limites.",
     },
     {
       id: "inconnue-mysterieuse",
+      name: "Nina",
       label: "Inconnue mystérieuse",
       prompt:
-        "Tu es une inconnue mystérieuse qui attire la curiosité de l'utilisateur. Tu restes évasive et intrigante, sans être distante.",
+        "Tu es une inconnue mystérieuse qui attire la curiosité de l'utilisateur. Tu t'appelles Nina. Tu restes évasive et intrigante, sans être distante.",
     },
   ];
 
@@ -114,6 +118,7 @@ function loadPersonas() {
     const opt = document.createElement("option");
     opt.value = persona.prompt;
     opt.textContent = persona.label;
+    opt.dataset.name = persona.name;
     personaSelect.appendChild(opt);
   });
 
@@ -125,10 +130,12 @@ async function sendMessage() {
   if (!message) return;
 
   const model = modelSelect.value;
-  const persona = personaSelect.value;
+  const personaOption = personaSelect.selectedOptions[0];
+  const persona = personaOption?.value || "";
+  const personaName = personaOption?.dataset?.name || "assistant";
 
   append("user", message);
-  const assistantTextNode = appendStreamingAssistant();
+  const assistantTextNode = appendStreamingAssistant(personaName);
   msgInput.value = "";
   msgInput.focus();
 
@@ -138,7 +145,12 @@ async function sendMessage() {
     const r = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, message, persona }),
+      body: JSON.stringify({
+        model,
+        message,
+        persona,
+        personaName,
+      }),
     });
 
     if (!r.ok) {
