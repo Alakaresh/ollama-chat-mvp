@@ -16,6 +16,22 @@ function append(role, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+function appendStreamingAssistant() {
+  const p = document.createElement("p");
+  p.style.margin = "6px 0";
+
+  const who = document.createElement("b");
+  who.textContent = "assistant: ";
+  p.appendChild(who);
+
+  const textNode = document.createTextNode("");
+  p.appendChild(textNode);
+  chatBox.appendChild(p);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  return textNode;
+}
+
 async function loadModels() {
   const r = await fetch("/api/models");
   const models = await r.json();
@@ -40,26 +56,69 @@ async function sendMessage() {
   const model = modelSelect.value;
 
   append("user", message);
+  const assistantTextNode = appendStreamingAssistant();
   msgInput.value = "";
   msgInput.focus();
 
   sendBtn.disabled = true;
 
   try {
-    const r = await fetch("/api/chat", {
+    const r = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model, message }),
     });
 
-    const data = await r.json();
-
     if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
       append("error", data?.error || "Erreur serveur");
       return;
     }
 
-    append("assistant", data.content || "");
+    if (!r.body) {
+      append("error", "Réponse streaming indisponible");
+      return;
+    }
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let current = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith("data:")) continue;
+
+        const payload = line.replace(/^data:\s*/, "");
+        let event;
+
+        try {
+          event = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+
+        if (event.type === "delta") {
+          current += event.delta || "";
+          assistantTextNode.textContent = current;
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (event.type === "replace") {
+          current = event.content || "";
+          assistantTextNode.textContent = current;
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (event.type === "error") {
+          append("error", event.error || "Erreur serveur");
+        }
+      }
+    }
   } catch (e) {
     append("error", e.message);
   } finally {
