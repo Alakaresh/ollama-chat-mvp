@@ -45,13 +45,14 @@ function buildSystemPrompt(persona, personaName) {
   return `
 ${GLOBAL_SYSTEM_PROMPT}
 
-PRÉNOM À UTILISER :
-${personaName || "Inconnu"}
+PERSONNAGE INCARNÉ :
+- Prénom : ${personaName || "Inconnu"}
 
-PERSONNALITÉ À INCARNER :
+PROFIL DU PERSONNAGE :
 ${persona}
   `.trim();
 }
+
 
 function sanitizeAssistantText(text) {
   if (!text) return "";
