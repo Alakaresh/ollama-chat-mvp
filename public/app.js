@@ -4,6 +4,33 @@ const chatBox = document.getElementById("chatBox");
 const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
 
+function setQuotedContent(container, text) {
+  container.textContent = "";
+  const regex = /"[^"]*"/g;
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(regex)) {
+    if (match.index > lastIndex) {
+      const before = document.createElement("span");
+      before.textContent = text.slice(lastIndex, match.index);
+      container.appendChild(before);
+    }
+
+    const quoted = document.createElement("span");
+    quoted.className = "quoted";
+    quoted.textContent = match[0];
+    container.appendChild(quoted);
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    const after = document.createElement("span");
+    after.textContent = text.slice(lastIndex);
+    container.appendChild(after);
+  }
+}
+
 function append(role, text) {
   const p = document.createElement("p");
   p.style.margin = "6px 0";
@@ -12,7 +39,10 @@ function append(role, text) {
   who.textContent = role + ": ";
   p.appendChild(who);
 
-  p.appendChild(document.createTextNode(text));
+  const message = document.createElement("span");
+  message.className = "chat-text";
+  setQuotedContent(message, text);
+  p.appendChild(message);
   chatBox.appendChild(p);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -25,12 +55,13 @@ function appendStreamingAssistant() {
   who.textContent = "assistant: ";
   p.appendChild(who);
 
-  const textNode = document.createTextNode("");
-  p.appendChild(textNode);
+  const message = document.createElement("span");
+  message.className = "chat-text";
+  p.appendChild(message);
   chatBox.appendChild(p);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  return textNode;
+  return message;
 }
 
 async function loadModels() {
@@ -149,11 +180,11 @@ async function sendMessage() {
 
         if (event.type === "delta") {
           current += event.delta || "";
-          assistantTextNode.textContent = current;
+          setQuotedContent(assistantTextNode, current);
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "replace") {
           current = event.content || "";
-          assistantTextNode.textContent = current;
+          setQuotedContent(assistantTextNode, current);
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "error") {
           append("error", event.error || "Erreur serveur");
