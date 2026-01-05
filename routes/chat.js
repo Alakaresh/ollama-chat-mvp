@@ -8,32 +8,6 @@ const {
 function chatRouter() {
   const router = express.Router();
 
-  // POST /api/chat { model, messages }
-  router.post("/chat", async (req, res) => {
-    const { model, messages, persona, personaName } = req.body;
-
-    if (!model || !messages) {
-      return res.status(400).json({ error: "model et messages requis" });
-    }
-
-    const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
-    const systemPrompt = buildSystemPrompt(persona, personaName);
-
-    try {
-      let text = await ollamaChatOnce({
-        model,
-        options,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-      });
-
-      text = sanitizeAssistantText(text);
-
-      res.json({ content: text });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
   // POST /api/chat/stream { model, messages }
   router.post("/chat/stream", async (req, res) => {
     const { model, messages, persona, personaName } = req.body;
@@ -42,7 +16,11 @@ function chatRouter() {
       return res.status(400).json({ error: "model et messages requis" });
     }
 
-    const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
+    let temperature = 1.0;
+    if (model.includes("mythomax") || model.includes("dolphin")) {
+      temperature = 0.45;
+    }
+    const options = { temperature, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
     const systemPrompt = buildSystemPrompt(persona, personaName);
 
     res.setHeader("Content-Type", "text/event-stream");
@@ -54,13 +32,20 @@ function chatRouter() {
       res.write(`data: ${JSON.stringify(payload)}\n\n`);
     };
 
+    const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
+
+    sendEvent({
+      type: "params",
+      params: { model, options, messages: finalMessages },
+    });
+
     let full = "";
 
     try {
       await ollamaChatStream({
         model,
         options,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: finalMessages,
         onDelta: (delta) => {
           full += delta;
           sendEvent({ type: "delta", delta });

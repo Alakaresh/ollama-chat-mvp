@@ -3,6 +3,8 @@ const personaSelect = document.getElementById("personaSelect");
 const chatBox = document.getElementById("chatBox");
 const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
+const logRequestEl = document.getElementById("log-request");
+const logResponseEl = document.getElementById("log-response");
 
 let chatHistory = [];
 
@@ -300,8 +302,13 @@ async function sendMessage() {
   msgInput.value = "";
   msgInput.focus();
 
+  // Logs
+  logRequestEl.textContent = "Génération en cours...";
+  logResponseEl.textContent = "";
+
   sendBtn.disabled = true;
   let fullAssistantResponse = "";
+  let rawResponse = "";
 
   try {
     const r = await fetch("/api/chat/stream", {
@@ -351,8 +358,12 @@ async function sendMessage() {
           continue;
         }
 
-        if (event.type === "delta") {
+        if (event.type === "params") {
+          logRequestEl.textContent = JSON.stringify(event.params, null, 2);
+        } else if (event.type === "delta") {
           fullAssistantResponse += event.delta || "";
+          rawResponse += event.delta || "";
+          logResponseEl.textContent = rawResponse;
           setQuotedContent(assistantTextNode, fullAssistantResponse);
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "error") {
