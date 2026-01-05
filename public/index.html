@@ -22,7 +22,19 @@
       margin-bottom: 12px;
     }
 
+    .persona-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
     #modelSelect {
+      width: 100%;
+      padding: 8px;
+    }
+
+    #personaSelect {
       width: 100%;
       padding: 8px;
     }
@@ -53,6 +65,11 @@
     <div class="model-row">
       <label for="modelSelect">Modèle IA :</label>
       <select id="modelSelect"></select>
+    </div>
+
+    <div class="persona-row">
+      <label for="personaSelect">Personnalité :</label>
+      <select id="personaSelect"></select>
     </div>
 
     <div id="chatBox"></div>

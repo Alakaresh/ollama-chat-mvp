@@ -20,6 +20,17 @@ RÈGLES :
 - Si une réponse ne respecte pas le format, tu la réécris immédiatement au bon format avant de l’envoyer.
 `.trim();
 
+function buildSystemPrompt(persona) {
+  if (!persona) return GLOBAL_SYSTEM_PROMPT;
+
+  return `
+${GLOBAL_SYSTEM_PROMPT}
+
+PERSONNALITÉ À INCARNER :
+${persona}
+  `.trim();
+}
+
 function sanitizeAssistantText(text) {
   if (!text) return "";
 
@@ -61,6 +72,7 @@ Donne uniquement la réponse finale.
 
 module.exports = {
   GLOBAL_SYSTEM_PROMPT,
+  buildSystemPrompt,
   sanitizeAssistantText,
   looksNarrativeOk,
   REWRITE_INSTRUCTION,

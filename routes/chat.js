@@ -1,7 +1,7 @@
 const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const {
-  GLOBAL_SYSTEM_PROMPT,
+  buildSystemPrompt,
   sanitizeAssistantText,
   looksNarrativeOk,
   REWRITE_INSTRUCTION,
@@ -12,13 +12,14 @@ function chatRouter() {
 
   // POST /api/chat { model, message }
   router.post("/chat", async (req, res) => {
-    const { model, message } = req.body;
+    const { model, message, persona } = req.body;
 
     if (!model || !message) {
       return res.status(400).json({ error: "model et message requis" });
     }
 
     const options = { temperature: 0.7, top_p: 0.9, repeat_penalty: 1.15 };
+    const systemPrompt = buildSystemPrompt(persona);
 
     try {
       // 1) première réponse
@@ -26,7 +27,7 @@ function chatRouter() {
         model,
         options,
         messages: [
-          { role: "system", content: GLOBAL_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: message },
         ],
       });
@@ -39,7 +40,7 @@ function chatRouter() {
           model,
           options,
           messages: [
-            { role: "system", content: GLOBAL_SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             { role: "user", content: REWRITE_INSTRUCTION + "\n\nTEXTE:\n" + text },
           ],
         });
@@ -55,13 +56,14 @@ function chatRouter() {
 
   // POST /api/chat/stream { model, message }
   router.post("/chat/stream", async (req, res) => {
-    const { model, message } = req.body;
+    const { model, message, persona } = req.body;
 
     if (!model || !message) {
       return res.status(400).json({ error: "model et message requis" });
     }
 
     const options = { temperature: 0.7, top_p: 0.9, repeat_penalty: 1.15 };
+    const systemPrompt = buildSystemPrompt(persona);
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -79,7 +81,7 @@ function chatRouter() {
         model,
         options,
         messages: [
-          { role: "system", content: GLOBAL_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: message },
         ],
         onDelta: (delta) => {
@@ -95,7 +97,7 @@ function chatRouter() {
           model,
           options,
           messages: [
-            { role: "system", content: GLOBAL_SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             { role: "user", content: REWRITE_INSTRUCTION + "\n\nTEXTE:\n" + cleaned },
           ],
         });
