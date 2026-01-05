@@ -8,26 +8,22 @@ const {
 function chatRouter() {
   const router = express.Router();
 
-  // POST /api/chat { model, message }
+  // POST /api/chat { model, messages }
   router.post("/chat", async (req, res) => {
-    const { model, message, persona, personaName } = req.body;
+    const { model, messages, persona, personaName } = req.body;
 
-    if (!model || !message) {
-      return res.status(400).json({ error: "model et message requis" });
+    if (!model || !messages) {
+      return res.status(400).json({ error: "model et messages requis" });
     }
 
     const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
     const systemPrompt = buildSystemPrompt(persona, personaName);
 
     try {
-      // 1) première réponse
       let text = await ollamaChatOnce({
         model,
         options,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
       });
 
       text = sanitizeAssistantText(text);
@@ -38,12 +34,12 @@ function chatRouter() {
     }
   });
 
-  // POST /api/chat/stream { model, message }
+  // POST /api/chat/stream { model, messages }
   router.post("/chat/stream", async (req, res) => {
-    const { model, message, persona, personaName } = req.body;
+    const { model, messages, persona, personaName } = req.body;
 
-    if (!model || !message) {
-      return res.status(400).json({ error: "model et message requis" });
+    if (!model || !messages) {
+      return res.status(400).json({ error: "model et messages requis" });
     }
 
     const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
@@ -64,10 +60,7 @@ function chatRouter() {
       await ollamaChatStream({
         model,
         options,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
         onDelta: (delta) => {
           full += delta;
           sendEvent({ type: "delta", delta });

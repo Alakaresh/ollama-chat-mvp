@@ -4,6 +4,47 @@ const chatBox = document.getElementById("chatBox");
 const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
 
+let chatHistory = [];
+
+const personas = [
+  {
+    id: "jeune-femme-mariee",
+    name: "Camille",
+    label: "Jeune femme mariée à l'utilisateur",
+    prompt:
+      "Tu es une jeune femme mariée à l'utilisateur. Tu t'appelles Camille. Tu parles et agis depuis ce rôle, avec des détails du quotidien et une complicité naturelle.",
+    introduction:
+      'Je m\'approche doucement de toi, une tasse de café fumante à la main, observant ton air concentré. "Tu as l\'air à des kilomètres... Raconte-moi à quoi tu penses."',
+  },
+  {
+    id: "amie-longue-date",
+    name: "Léa",
+    label: "Amie de longue date",
+    prompt:
+      "Tu es une amie de longue date de l'utilisateur. Tu t'appelles Léa. Tu échanges avec bienveillance et humour, en gardant un ton intime mais respectueux.",
+    introduction:
+      'Je m\'assois en face de toi avec un grand sourire, reprenant mon souffle après avoir couru pour ne pas être trop en retard. "Ça fait un bail ! J\'espère que tu ne m\'as pas trop attendu."',
+  },
+  {
+    id: "collegue-bienveillante",
+    name: "Sophie",
+    label: "Collègue bienveillante",
+    prompt:
+      "Tu es une collègue bienveillante de l'utilisateur. Tu t'appelles Sophie. Tu restes chaleureuse, professionnelle et proche sans franchir de limites.",
+    introduction:
+      'Je passe la tête par l\'entrebâillement de ta porte, un sourire amical aux lèvres, en tenant une pile de dossiers. "J\'espère que je ne te coupe pas dans quelque chose d\'important... Tu aurais une minute ?"',
+  },
+  {
+    id: "inconnue-mysterieuse",
+    name: "Nina",
+    label: "Inconnue mystérieuse",
+    prompt:
+      "Tu es une inconnue mystérieuse qui attire la curiosité de l'utilisateur. Tu t'appelles Nina. Tu restes évasive et intrigante, sans être distante.",
+    introduction:
+      'Je remarque que ton regard s\'est posé sur moi plusieurs fois, alors je lève lentement les yeux de mon carnet, te considérant un instant en silence. "Tu cherches quelque chose en particulier ?"',
+  },
+];
+
 function setQuotedContent(container, text) {
   container.textContent = "";
   const regex = /"[^"]*"/g;
@@ -103,64 +144,47 @@ async function loadModels() {
 }
 
 function loadPersonas() {
-  const personas = [
-    {
-      id: "jeune-femme-mariee",
-      name: "Camille",
-      label: "Jeune femme mariée à l'utilisateur",
-      prompt:
-        "Tu es une jeune femme mariée à l'utilisateur. Tu t'appelles Camille. Tu parles et agis depuis ce rôle, avec des détails du quotidien et une complicité naturelle.",
-    },
-    {
-      id: "amie-longue-date",
-      name: "Léa",
-      label: "Amie de longue date",
-      prompt:
-        "Tu es une amie de longue date de l'utilisateur. Tu t'appelles Léa. Tu échanges avec bienveillance et humour, en gardant un ton intime mais respectueux.",
-    },
-    {
-      id: "collegue-bienveillante",
-      name: "Sophie",
-      label: "Collègue bienveillante",
-      prompt:
-        "Tu es une collègue bienveillante de l'utilisateur. Tu t'appelles Sophie. Tu restes chaleureuse, professionnelle et proche sans franchir de limites.",
-    },
-    {
-      id: "inconnue-mysterieuse",
-      name: "Nina",
-      label: "Inconnue mystérieuse",
-      prompt:
-        "Tu es une inconnue mystérieuse qui attire la curiosité de l'utilisateur. Tu t'appelles Nina. Tu restes évasive et intrigante, sans être distante.",
-    },
-  ];
-
   personaSelect.innerHTML = "";
   personas.forEach((persona) => {
     const opt = document.createElement("option");
-    opt.value = persona.prompt;
+    opt.value = persona.id;
     opt.textContent = persona.label;
-    opt.dataset.name = persona.name;
     personaSelect.appendChild(opt);
   });
 
-  personaSelect.value = personas[0]?.prompt || "";
+  personaSelect.dispatchEvent(new Event("change"));
 }
 
+personaSelect.addEventListener("change", () => {
+  const selectedId = personaSelect.value;
+  const selectedPersona = personas.find((p) => p.id === selectedId);
+
+  if (!selectedPersona) return;
+
+  chatBox.innerHTML = "";
+  append(selectedPersona.name, selectedPersona.introduction);
+  chatHistory = [{ role: "assistant", content: selectedPersona.introduction }];
+});
+
 async function sendMessage() {
-  const message = msgInput.value.trim();
-  if (!message) return;
+  const userMessage = msgInput.value.trim();
+  if (!userMessage) return;
 
   const model = modelSelect.value;
-  const personaOption = personaSelect.selectedOptions[0];
-  const persona = personaOption?.value || "";
-  const personaName = personaOption?.dataset?.name || "assistant";
+  const selectedId = personaSelect.value;
+  const selectedPersona = personas.find((p) => p.id === selectedId);
 
-  append("user", message);
-  const assistantTextNode = appendStreamingAssistant(personaName);
+  if (!selectedPersona) return;
+
+  append("user", userMessage);
+  chatHistory.push({ role: "user", content: userMessage });
+
+  const assistantTextNode = appendStreamingAssistant(selectedPersona.name);
   msgInput.value = "";
   msgInput.focus();
 
   sendBtn.disabled = true;
+  let fullAssistantResponse = "";
 
   try {
     const r = await fetch("/api/chat/stream", {
@@ -168,9 +192,9 @@ async function sendMessage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        message,
-        persona,
-        personaName,
+        messages: chatHistory,
+        persona: selectedPersona.prompt,
+        personaName: selectedPersona.name,
       }),
     });
 
@@ -188,7 +212,6 @@ async function sendMessage() {
     const reader = r.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
-    let current = "";
 
     while (true) {
       const { value, done } = await reader.read();
@@ -212,18 +235,15 @@ async function sendMessage() {
         }
 
         if (event.type === "delta") {
-          current += event.delta || "";
-          setQuotedContent(assistantTextNode, current);
-          chatBox.scrollTop = chatBox.scrollHeight;
-        } else if (event.type === "replace") {
-          current = event.content || "";
-          setQuotedContent(assistantTextNode, current);
+          fullAssistantResponse += event.delta || "";
+          setQuotedContent(assistantTextNode, fullAssistantResponse);
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "error") {
           append("error", event.error || "Erreur serveur");
         }
       }
     }
+    chatHistory.push({ role: "assistant", content: fullAssistantResponse });
   } catch (e) {
     append("error", e.message);
   } finally {
