@@ -1,15 +1,67 @@
-<h1>Ollama Chat MVP</h1>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ollama Chat MVP</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
 
-<div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-  <label>Modèle IA :</label>
-  <select id="modelSelect" style="min-width:320px;"></select>
-</div>
+    .gsm-container {
+      max-width: 360px;
+      margin: 0 auto;
+      padding: 16px;
+    }
 
-<div id="chatBox" style="border:1px solid #ccc; height:70vh; padding:10px; overflow:auto;"></div>
+    .model-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
 
-<div style="display:flex; gap:10px; margin-top:10px;">
-  <input id="msgInput" type="text" placeholder="Ton message..." style="flex:1; padding:8px;">
-  <button id="sendBtn">Envoyer</button>
-</div>
+    #modelSelect {
+      width: 100%;
+      padding: 8px;
+    }
 
-<script src="app.js"></script>
+    #chatBox {
+      border: 1px solid #ccc;
+      height: 70vh;
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #msgInput {
+      flex: 1;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="gsm-container">
+    <h1>Ollama Chat MVP</h1>
+
+    <div class="model-row">
+      <label for="modelSelect">Modèle IA :</label>
+      <select id="modelSelect"></select>
+    </div>
+
+    <div id="chatBox"></div>
+
+    <div class="input-row">
+      <input id="msgInput" type="text" placeholder="Ton message...">
+      <button id="sendBtn">Envoyer</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
