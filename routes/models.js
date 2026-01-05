@@ -12,7 +12,8 @@ function modelsRouter() {
       const models = (data.models || []).map(m => m.name);
       res.json(models);
     } catch (e) {
-      res.status(500).json({ error: e.message });
+      console.error("Impossible de fetch les modèles:", e.message);
+      res.json([]); // renvoi une liste vide pour ne pas casser le front
     }
   });
 

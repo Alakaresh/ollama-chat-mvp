@@ -16,7 +16,7 @@ function chatRouter() {
       return res.status(400).json({ error: "model et message requis" });
     }
 
-    const options = { temperature: 0.7, top_p: 0.9, repeat_penalty: 1.15 };
+    const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
     const systemPrompt = buildSystemPrompt(persona, personaName);
 
     try {
@@ -46,7 +46,7 @@ function chatRouter() {
       return res.status(400).json({ error: "model et message requis" });
     }
 
-    const options = { temperature: 0.7, top_p: 0.9, repeat_penalty: 1.15 };
+    const options = { temperature: 1.0, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
     const systemPrompt = buildSystemPrompt(persona, personaName);
 
     res.setHeader("Content-Type", "text/event-stream");

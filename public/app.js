@@ -65,20 +65,41 @@ function appendStreamingAssistant(name) {
 }
 
 async function loadModels() {
-  const r = await fetch("/api/models");
-  const models = await r.json();
+  try {
+    const r = await fetch("/api/models");
+    const models = await r.json();
 
-  modelSelect.innerHTML = "";
-  models.forEach((m) => {
+    modelSelect.innerHTML = "";
+
+    if (models.length === 0) {
+      const opt = document.createElement("option");
+      opt.textContent = "Aucun modèle (Ollama est-il lancé?)";
+      opt.disabled = true;
+      modelSelect.appendChild(opt);
+      modelSelect.disabled = true;
+      sendBtn.disabled = true;
+      return;
+    }
+
+    models.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      modelSelect.appendChild(opt);
+    });
+
+    // choix par défaut (si dispo)
+    const preferred = models.find((m) => m.includes("mythomax")) || models[0];
+    if (preferred) modelSelect.value = preferred;
+  } catch (e) {
+    console.error("Impossible de charger les modèles:", e);
     const opt = document.createElement("option");
-    opt.value = m;
-    opt.textContent = m;
+    opt.textContent = "Erreur au chargement des modèles";
+    opt.disabled = true;
     modelSelect.appendChild(opt);
-  });
-
-  // choix par défaut (si dispo)
-  const preferred = models.find(m => m.includes("mythomax")) || models[0];
-  if (preferred) modelSelect.value = preferred;
+    modelSelect.disabled = true;
+    sendBtn.disabled = true;
+  }
 }
 
 function loadPersonas() {
