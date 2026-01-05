@@ -102,9 +102,41 @@
       flex: 1;
       padding: 8px;
     }
+
+    .main-wrapper {
+      display: flex;
+      gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    #log-container {
+      flex-grow: 1;
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 90vh;
+      overflow: auto;
+      background-color: #f5f5f5;
+    }
+
+    #log-container h2, #log-container h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    #log-container pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background-color: #fff;
+      padding: 8px;
+      border: 1px solid #ddd;
+      min-height: 50px;
+    }
   </style>
 </head>
 <body>
+<div class="main-wrapper">
   <div class="gsm-container">
     <h1>Ollama Chat MVP</h1>
 
@@ -125,6 +157,13 @@
       <button id="sendBtn">Envoyer</button>
     </div>
   </div>
-
+  <div id="log-container">
+    <h2>Logs</h2>
+    <h3>Requête :</h3>
+    <pre id="log-request"></pre>
+    <h3>Réponse Brute :</h3>
+    <pre id="log-response"></pre>
+  </div>
+</div>
   <script src="app.js"></script>
 </body>
