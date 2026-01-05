@@ -1,0 +1,17 @@
+# Node
+node_modules/
+
+# DB / data
+data.db
+data.db-wal
+data.db-shm
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
