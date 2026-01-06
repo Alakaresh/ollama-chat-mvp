@@ -1,6 +1,6 @@
-# Ollama Chat MVP
+# Lya
 
-Ollama Chat MVP est un projet expérimental visant à construire une interface de discussion locale
+Lya est un projet expérimental visant à construire une interface de discussion locale
 basée sur **Ollama**, avec un **contrôle strict du style de réponse**, indépendant du modèle utilisé.
 
 L’objectif n’est pas seulement de discuter avec un LLM, mais de poser les bases d’un **moteur de conversation narratif**, proche des applications mobiles de roleplay / chat immersif.

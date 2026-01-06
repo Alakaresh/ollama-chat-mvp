@@ -1,6 +1,6 @@
 {
-  "name": "Ollama Chat MVP",
-  "short_name": "Ollama Chat",
+  "name": "Lya",
+  "short_name": "Lya",
   "version": "1.0.0",
   "start_url": "/",
   "display": "standalone",
@@ -8,7 +8,7 @@
   "theme_color": "#005A8D",
   "icons": [
     {
-      "src": "/assets/bg.png",
+      "src": "/assets/lya-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
