@@ -10,6 +10,7 @@ const appModeLabel = document.getElementById("appModeLabel");
 const personaGrid = document.getElementById("personaGrid");
 const chatList = document.getElementById("chatList");
 const personaSearch = document.getElementById("personaSearch");
+const nsfwToggle = document.getElementById("nsfwToggle");
 const appShell = document.querySelector(".app-shell");
 const chatPersonaName = document.getElementById("chatPersonaName");
 const backToChatsBtn = document.getElementById("backToChats");
@@ -21,6 +22,7 @@ let activePersonaId = null;
 let currentAppMode = "prod";
 let serverAppMode = "prod";
 const appModeStorageKey = "appModeOverride";
+const nsfwStorageKey = "showNsfw";
 const chatSessions = new Map();
 
 function setActiveScreen(screen) {
@@ -86,6 +88,7 @@ const personas = [
     id: "mei",
     name: "Mei",
     label: "Mei — camarade de classe (bibliothèque)",
+    nsfw: true,
     tags: ["Timide", "Bibliothèque", "Flirt"],
     introduction: `La bibliothèque est presque silencieuse, seulement ponctuée par le froissement des pages et le bruit lointain d’une chaise qu’on déplace. Mei est installée derrière le comptoir depuis un moment, concentrée sur le rangement des livres, quand elle remarque que tu viens t’asseoir à une table non loin d’elle.
 
@@ -109,7 +112,6 @@ Elle relève discrètement les yeux vers toi, hésite une seconde, puis s’appr
 - Narration à la troisième personne
 - Actions locales et immédiates, détails sensoriels (souffle, peau, frissons)
 - Réponses courtes à moyennes
-- Langage NSFW accepté : descriptions charnelles explicites, désir, tension sexuelle
 
 // LIMITES
 - Interaction respectueuse, consentement explicite et continu
@@ -144,8 +146,10 @@ function updateChatHeader(persona) {
 function renderPersonaGrid(filter = "") {
   if (!personaGrid) return;
   const term = filter.trim().toLowerCase();
+  const showNsfw = nsfwToggle ? nsfwToggle.checked : false;
   personaGrid.innerHTML = "";
   const filtered = personas.filter((persona) => {
+    if (!showNsfw && persona.nsfw) return false;
     return persona.name.toLowerCase().includes(term);
   });
 
@@ -417,6 +421,7 @@ async function sendMessage() {
         messages: chatHistory,
         persona: selectedPersona.prompt,
         personaName: selectedPersona.name,
+        personaNsfw: Boolean(selectedPersona.nsfw),
       }),
     });
 
@@ -504,6 +509,15 @@ if (appModeToggle) {
 if (personaSearch) {
   personaSearch.addEventListener("input", (event) => {
     renderPersonaGrid(event.target.value);
+  });
+}
+
+if (nsfwToggle) {
+  const storedPreference = localStorage.getItem(nsfwStorageKey);
+  nsfwToggle.checked = storedPreference === "true";
+  nsfwToggle.addEventListener("change", (event) => {
+    localStorage.setItem(nsfwStorageKey, String(event.target.checked));
+    renderPersonaGrid(personaSearch?.value || "");
   });
 }
 
