@@ -23,8 +23,9 @@ app.use(express.json());
 app.use(express.static("public"));
 
 app.get("/api/config", (req, res) => {
-  const resolvedMode = isCloudflareRequest(req) ? "prod" : appMode;
-  res.json({ appMode: resolvedMode });
+  const isCloudflare = isCloudflareRequest(req);
+  const resolvedMode = isCloudflare ? "prod" : appMode;
+  res.json({ appMode: resolvedMode, isCloudflare });
 });
 
 app.use("/api/models", modelsRouter());

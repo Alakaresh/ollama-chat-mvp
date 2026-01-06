@@ -30,6 +30,18 @@ async function loadConfig() {
     const response = await fetch("/api/config");
     const data = await response.json();
     serverAppMode = data.appMode?.toLowerCase() === "dev" ? "dev" : "prod";
+    const isCloudflare = Boolean(data.isCloudflare);
+    if (isCloudflare) {
+      setAppMode("prod");
+      if (appModeToggle) {
+        appModeToggle.disabled = true;
+        appModeToggle.closest(".mode-row")?.setAttribute("hidden", "hidden");
+      }
+      if (appModeLabel) {
+        appModeLabel.setAttribute("hidden", "hidden");
+      }
+      return;
+    }
     if (serverAppMode === "prod") {
       setAppMode("prod");
       if (appModeToggle) {
