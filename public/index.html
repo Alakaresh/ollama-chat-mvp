@@ -137,14 +137,18 @@
       border: 1px solid #ddd;
       min-height: 50px;
     }
+
+    body[data-app-mode="prod"] [data-dev-only] {
+      display: none;
+    }
   </style>
 </head>
-<body>
+<body data-app-mode="prod">
 <div class="main-wrapper">
   <div class="gsm-container">
     <h1>Ollama Chat MVP</h1>
 
-    <div class="model-row">
+    <div class="model-row" data-dev-only>
       <label for="modelSelect">Modèle IA :</label>
       <select id="modelSelect"></select>
     </div>
@@ -161,7 +165,7 @@
       <button id="sendBtn">Envoyer</button>
     </div>
   </div>
-  <div id="log-container">
+  <div id="log-container" data-dev-only>
     <h2>Logs</h2>
     <h3>Requête :</h3>
     <pre id="log-request"></pre>
