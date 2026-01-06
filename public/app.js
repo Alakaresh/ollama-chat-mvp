@@ -146,10 +146,7 @@ function renderPersonaGrid(filter = "") {
   const term = filter.trim().toLowerCase();
   personaGrid.innerHTML = "";
   const filtered = personas.filter((persona) => {
-    return (
-      persona.name.toLowerCase().includes(term) ||
-      persona.label.toLowerCase().includes(term)
-    );
+    return persona.name.toLowerCase().includes(term);
   });
 
   filtered.forEach((persona) => {
