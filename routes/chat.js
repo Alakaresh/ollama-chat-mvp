@@ -10,7 +10,7 @@ function chatRouter() {
 
   // POST /api/chat/stream { model, messages }
   router.post("/chat/stream", async (req, res) => {
-    const { model, messages, persona, personaName } = req.body;
+    const { model, messages, persona, personaName, personaNsfw } = req.body;
 
     if (!model || !messages) {
       return res.status(400).json({ error: "model et messages requis" });
@@ -21,7 +21,7 @@ function chatRouter() {
       temperature = 0.45;
     }
     const options = { temperature, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
-    const systemPrompt = buildSystemPrompt(persona, personaName);
+    const systemPrompt = buildSystemPrompt(persona, personaName, personaNsfw);
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
