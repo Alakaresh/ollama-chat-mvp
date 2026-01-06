@@ -1,0 +1,16 @@
+{
+  "name": "Ollama Chat MVP",
+  "short_name": "Ollama Chat",
+  "version": "1.0.0",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#005A8D",
+  "icons": [
+    {
+      "src": "/assets/bg.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
