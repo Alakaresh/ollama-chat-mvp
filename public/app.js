@@ -7,11 +7,33 @@ const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
 const appModeToggle = document.getElementById("appModeToggle");
 const appModeLabel = document.getElementById("appModeLabel");
+const personaGrid = document.getElementById("personaGrid");
+const chatList = document.getElementById("chatList");
+const personaSearch = document.getElementById("personaSearch");
+const appShell = document.querySelector(".app-shell");
+const chatPersonaName = document.getElementById("chatPersonaName");
+const backToChatsBtn = document.getElementById("backToChats");
+const navButtons = document.querySelectorAll("[data-nav-target]");
+const screens = document.querySelectorAll("[data-screen]");
 
 let chatHistory = [];
+let activePersonaId = null;
 let currentAppMode = "prod";
 let serverAppMode = "prod";
 const appModeStorageKey = "appModeOverride";
+const chatSessions = new Map();
+
+function setActiveScreen(screen) {
+  screens.forEach((el) => {
+    el.classList.toggle("is-active", el.dataset.screen === screen);
+  });
+  navButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.navTarget === screen);
+  });
+  if (appShell) {
+    appShell.classList.toggle("is-hidden", screen === "chat");
+  }
+}
 
 function setAppMode(mode) {
   const normalizedMode = mode?.toLowerCase() === "dev" ? "dev" : "prod";
@@ -23,6 +45,7 @@ function setAppMode(mode) {
   if (appModeLabel) {
     appModeLabel.textContent = normalizedMode;
   }
+  setActiveScreen(normalizedMode === "prod" ? "home" : "chat");
 }
 
 async function loadConfig() {
@@ -63,6 +86,7 @@ const personas = [
     id: "mei",
     name: "Mei",
     label: "Mei — camarade de classe (bibliothèque)",
+    tags: ["Timide", "Bibliothèque", "Flirt"],
     introduction: `La bibliothèque est presque silencieuse, seulement ponctuée par le froissement des pages et le bruit lointain d’une chaise qu’on déplace. Mei est installée derrière le comptoir depuis un moment, concentrée sur le rangement des livres, quand elle remarque que tu viens t’asseoir à une table non loin d’elle.
 
 Elle relève discrètement les yeux vers toi, hésite une seconde, puis s’approche avec un petit carnet à la main, visiblement un peu nerveuse. "Euh… si tu as besoin d’aide pour trouver quelque chose, dis-le moi."`,
@@ -93,6 +117,138 @@ Elle relève discrètement les yeux vers toi, hésite une seconde, puis s’appr
 `
   }
 ];
+
+function getSession(persona) {
+  if (!chatSessions.has(persona.id)) {
+    chatSessions.set(persona.id, {
+      history: [{ role: "assistant", content: persona.introduction }],
+      lastMessage: persona.introduction,
+    });
+  }
+  return chatSessions.get(persona.id);
+}
+
+function renderChatHistory(history) {
+  chatBox.innerHTML = "";
+  history.forEach((message) => {
+    append(message.role, message.content);
+  });
+}
+
+function updateChatHeader(persona) {
+  if (chatPersonaName) {
+    chatPersonaName.textContent = persona ? persona.name : "";
+  }
+}
+
+function renderPersonaGrid(filter = "") {
+  if (!personaGrid) return;
+  const term = filter.trim().toLowerCase();
+  personaGrid.innerHTML = "";
+  const filtered = personas.filter((persona) => {
+    return (
+      persona.name.toLowerCase().includes(term) ||
+      persona.label.toLowerCase().includes(term)
+    );
+  });
+
+  filtered.forEach((persona) => {
+    const card = document.createElement("div");
+    card.className = "persona-card";
+    card.addEventListener("click", () => {
+      setActivePersona(persona.id);
+      setActiveScreen("chat");
+    });
+
+    const cover = document.createElement("div");
+    cover.className = "persona-cover";
+    cover.textContent = persona.name;
+    card.appendChild(cover);
+
+    const tags = document.createElement("div");
+    tags.className = "persona-tags";
+    (persona.tags || []).slice(0, 3).forEach((tag) => {
+      const tagEl = document.createElement("span");
+      tagEl.className = "persona-tag";
+      tagEl.textContent = `#${tag}`;
+      tags.appendChild(tagEl);
+    });
+    card.appendChild(tags);
+
+    const content = document.createElement("div");
+    content.className = "persona-content";
+
+    const title = document.createElement("p");
+    title.className = "persona-title";
+    title.textContent = persona.name;
+
+    const subtitle = document.createElement("span");
+    subtitle.className = "persona-subtitle";
+    subtitle.textContent = persona.label;
+
+    content.appendChild(title);
+    content.appendChild(subtitle);
+    card.appendChild(content);
+
+    personaGrid.appendChild(card);
+  });
+}
+
+function updateChatList() {
+  if (!chatList) return;
+  chatList.innerHTML = "";
+  const activeChats = personas.filter((persona) => {
+    const session = chatSessions.get(persona.id);
+    return session && session.history.length > 1;
+  });
+
+  if (activeChats.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "persona-subtitle";
+    emptyState.textContent = "Aucun chat en cours pour le moment.";
+    chatList.appendChild(emptyState);
+    return;
+  }
+
+  activeChats.forEach((persona) => {
+    const session = chatSessions.get(persona.id);
+    const item = document.createElement("div");
+    item.className = "chat-item";
+    item.addEventListener("click", () => {
+      setActivePersona(persona.id);
+      setActiveScreen("chat");
+    });
+
+    const avatar = document.createElement("div");
+    avatar.className = "chat-avatar";
+    avatar.textContent = persona.name.slice(0, 1);
+
+    const preview = document.createElement("div");
+    preview.className = "chat-preview";
+
+    const title = document.createElement("strong");
+    title.textContent = persona.name;
+
+    const snippet = document.createElement("span");
+    snippet.textContent = session?.lastMessage || "Nouveau chat";
+
+    preview.appendChild(title);
+    preview.appendChild(snippet);
+
+    item.appendChild(avatar);
+    item.appendChild(preview);
+    chatList.appendChild(item);
+  });
+}
+
+function setActivePersona(personaId) {
+  if (!personaId) return;
+  activePersonaId = personaId;
+  if (personaSelect) {
+    personaSelect.value = personaId;
+    personaSelect.dispatchEvent(new Event("change"));
+  }
+}
 
 
 function setQuotedContent(container, text) {
@@ -211,6 +367,8 @@ function loadPersonas() {
   });
 
   personaSelect.dispatchEvent(new Event("change"));
+  renderPersonaGrid();
+  updateChatList();
 }
 
 personaSelect.addEventListener("change", () => {
@@ -219,9 +377,11 @@ personaSelect.addEventListener("change", () => {
 
   if (!selectedPersona) return;
 
-  chatBox.innerHTML = "";
-  append(selectedPersona.name, selectedPersona.introduction);
-  chatHistory = [{ role: "assistant", content: selectedPersona.introduction }];
+  const session = getSession(selectedPersona);
+  chatHistory = session.history;
+  renderChatHistory(chatHistory);
+  updateChatHeader(selectedPersona);
+  updateChatList();
 });
 
 async function sendMessage() {
@@ -233,9 +393,11 @@ async function sendMessage() {
   const selectedPersona = personas.find((p) => p.id === selectedId);
 
   if (!selectedPersona) return;
+  const session = getSession(selectedPersona);
 
   append("user", userMessage);
   chatHistory.push({ role: "user", content: userMessage });
+  session.lastMessage = userMessage;
 
   const assistantTextNode = appendStreamingAssistant(selectedPersona.name);
   msgInput.value = "";
@@ -311,6 +473,8 @@ async function sendMessage() {
       }
     }
     chatHistory.push({ role: "assistant", content: fullAssistantResponse });
+    session.lastMessage = fullAssistantResponse;
+    updateChatList();
   } catch (e) {
     append("error", e.message);
   } finally {
@@ -340,10 +504,37 @@ if (appModeToggle) {
   });
 }
 
+if (personaSearch) {
+  personaSearch.addEventListener("input", (event) => {
+    renderPersonaGrid(event.target.value);
+  });
+}
+
+if (backToChatsBtn) {
+  backToChatsBtn.addEventListener("click", () => {
+    setActiveScreen("chats");
+  });
+}
+
+navButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = button.dataset.navTarget;
+    if (target) {
+      setActiveScreen(target);
+      if (target === "chats") {
+        updateChatList();
+      }
+    }
+  });
+});
+
 async function init() {
   await loadConfig();
   loadModels();
   loadPersonas();
+  if (!activePersonaId && personas[0]) {
+    setActivePersona(personas[0].id);
+  }
 }
 
 init();
