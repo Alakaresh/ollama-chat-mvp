@@ -148,6 +148,10 @@
     body[data-app-mode="prod"] [data-dev-only] {
       display: none;
     }
+
+    body[data-cloudflare="true"] .mode-row {
+      display: none;
+    }
   </style>
 </head>
 <body data-app-mode="prod">
