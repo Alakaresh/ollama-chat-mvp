@@ -32,6 +32,7 @@ async function loadConfig() {
     serverAppMode = data.appMode?.toLowerCase() === "dev" ? "dev" : "prod";
     const isCloudflare = Boolean(data.isCloudflare);
     if (isCloudflare) {
+      document.body.dataset.cloudflare = "true";
       setAppMode("prod");
       if (appModeToggle) {
         appModeToggle.disabled = true;
