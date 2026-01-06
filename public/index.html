@@ -152,6 +152,36 @@
     body[data-cloudflare="true"] .mode-row {
       display: none;
     }
+
+    body[data-app-mode="prod"] .main-wrapper {
+      max-width: 100%;
+      padding: 12px;
+    }
+
+    body[data-app-mode="prod"] .gsm-container {
+      width: 100%;
+      max-width: 100%;
+      flex: 1 1 auto;
+      padding: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .main-wrapper {
+        max-width: 100%;
+        padding: 12px;
+      }
+
+      .gsm-container {
+        width: 100%;
+        max-width: 100%;
+        flex: 1 1 auto;
+        padding: 12px;
+      }
+
+      #chatBox {
+        height: 62vh;
+      }
+    }
   </style>
 </head>
 <body data-app-mode="prod">
