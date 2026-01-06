@@ -26,6 +26,13 @@
       margin-bottom: 12px;
     }
 
+    .mode-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
     .persona-row {
       display: flex;
       flex-direction: column;
@@ -147,6 +154,12 @@
 <div class="main-wrapper">
   <div class="gsm-container">
     <h1>Ollama Chat MVP</h1>
+
+    <div class="mode-row">
+      <label for="appModeToggle">Mode prod :</label>
+      <input id="appModeToggle" type="checkbox">
+      <span id="appModeLabel">dev</span>
+    </div>
 
     <div class="model-row" data-dev-only>
       <label for="modelSelect">Modèle IA :</label>
