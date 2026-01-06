@@ -5,8 +5,45 @@ const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
 const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
+const appModeToggle = document.getElementById("appModeToggle");
+const appModeLabel = document.getElementById("appModeLabel");
 
 let chatHistory = [];
+let currentAppMode = "prod";
+let serverAppMode = "prod";
+const appModeStorageKey = "appModeOverride";
+
+function setAppMode(mode) {
+  const normalizedMode = mode?.toLowerCase() === "dev" ? "dev" : "prod";
+  currentAppMode = normalizedMode;
+  document.body.dataset.appMode = normalizedMode;
+  if (appModeToggle) {
+    appModeToggle.checked = normalizedMode === "prod";
+  }
+  if (appModeLabel) {
+    appModeLabel.textContent = normalizedMode;
+  }
+}
+
+async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const data = await response.json();
+    serverAppMode = data.appMode?.toLowerCase() === "dev" ? "dev" : "prod";
+    if (serverAppMode === "prod") {
+      setAppMode("prod");
+      if (appModeToggle) {
+        appModeToggle.disabled = true;
+      }
+      return;
+    }
+    const override = localStorage.getItem(appModeStorageKey);
+    setAppMode(override || serverAppMode);
+  } catch (error) {
+    console.warn("Impossible de charger la config:", error);
+    setAppMode("prod");
+  }
+}
 
 const personas = [
   {
@@ -131,9 +168,14 @@ async function loadModels() {
       modelSelect.appendChild(opt);
     });
 
-    // choix par défaut (si dispo)
     const preferred = models.find((m) => m.includes("mythomax")) || models[0];
     if (preferred) modelSelect.value = preferred;
+    if (currentAppMode === "prod") {
+      modelSelect.value = preferred || modelSelect.value;
+      modelSelect.disabled = true;
+    } else {
+      modelSelect.disabled = false;
+    }
     sendBtn.disabled = false;
   } catch (e) {
     console.error("Impossible de charger les modèles:", e);
@@ -267,6 +309,28 @@ sendBtn.addEventListener("click", sendMessage);
 msgInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage();
 });
+if (appModeToggle) {
+  appModeToggle.addEventListener("change", (event) => {
+    const nextMode = event.target.checked ? "prod" : "dev";
+    if (serverAppMode === "prod") {
+      setAppMode("prod");
+      appModeToggle.checked = true;
+      return;
+    }
+    if (nextMode === "dev") {
+      localStorage.removeItem(appModeStorageKey);
+    } else {
+      localStorage.setItem(appModeStorageKey, nextMode);
+    }
+    setAppMode(nextMode);
+    loadModels();
+  });
+}
 
-loadModels();
-loadPersonas();
+async function init() {
+  await loadConfig();
+  loadModels();
+  loadPersonas();
+}
+
+init();
