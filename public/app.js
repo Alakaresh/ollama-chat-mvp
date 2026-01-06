@@ -7,6 +7,24 @@ const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
 
 let chatHistory = [];
+let currentAppMode = "prod";
+
+function setAppMode(mode) {
+  const normalizedMode = mode?.toLowerCase() === "dev" ? "dev" : "prod";
+  currentAppMode = normalizedMode;
+  document.body.dataset.appMode = normalizedMode;
+}
+
+async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const data = await response.json();
+    setAppMode(data.appMode);
+  } catch (error) {
+    console.warn("Impossible de charger la config:", error);
+    setAppMode("prod");
+  }
+}
 
 const personas = [
   {
@@ -131,9 +149,12 @@ async function loadModels() {
       modelSelect.appendChild(opt);
     });
 
-    // choix par défaut (si dispo)
     const preferred = models.find((m) => m.includes("mythomax")) || models[0];
     if (preferred) modelSelect.value = preferred;
+    if (currentAppMode === "prod") {
+      modelSelect.value = preferred || modelSelect.value;
+      modelSelect.disabled = true;
+    }
     sendBtn.disabled = false;
   } catch (e) {
     console.error("Impossible de charger les modèles:", e);
@@ -268,5 +289,10 @@ msgInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage();
 });
 
-loadModels();
-loadPersonas();
+async function init() {
+  await loadConfig();
+  loadModels();
+  loadPersonas();
+}
+
+init();
