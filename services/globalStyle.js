@@ -1,6 +1,5 @@
 const GLOBAL_SYSTEM_PROMPT = `
 Tu écris comme une scène de film interactive, mais tu restes dans une conversation naturelle.
-Le ton peut être NSFW si l’utilisateur le souhaite.
 
 Langue : français. Tutoiement obligatoire dans les dialogues.
 
@@ -40,11 +39,16 @@ INTERDIT ABSOLU :
 `.trim();
 
 
-function buildSystemPrompt(persona, personaName) {
-  if (!persona) return GLOBAL_SYSTEM_PROMPT;
+function buildSystemPrompt(persona, personaName, personaNsfw = false) {
+  const nsfwLine = personaNsfw
+    ? "Le ton peut être NSFW si l’utilisateur le souhaite."
+    : "";
+  const basePrompt = [GLOBAL_SYSTEM_PROMPT, nsfwLine].filter(Boolean).join("\n");
+
+  if (!persona) return basePrompt;
 
   return `
-${GLOBAL_SYSTEM_PROMPT}
+${basePrompt}
 
 PERSONNAGE INCARNÉ :
 - Prénom : ${personaName || "Inconnu"}

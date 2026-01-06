@@ -94,6 +94,7 @@ Chaque persona est un objet JavaScript qui doit être ajouté au tableau `person
 -   **`id`** : Un identifiant unique en minuscules et sans espaces (ex: `jeune-femme-mariee`).
 -   **`name`** : Le prénom du persona (ex: `"Camille"`).
 -   **`label`** : Une très courte description affichée dans le menu de sélection (ex: `"Jeune femme mariée à l'utilisateur"`).
+-   **`nsfw`** : Booléen indiquant si la personnalité accepte du contenu NSFW (`true`/`false`).
 -   **`introduction`** : La première phrase que le persona prononcera pour engager la conversation.
 -   **`prompt`** : Le cœur du persona. C'est ici que sa personnalité, son contexte et ses limites sont définis en détail.
 
