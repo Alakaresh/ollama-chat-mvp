@@ -8,9 +8,9 @@
   "theme_color": "#005A8D",
   "icons": [
     {
-      "src": "/assets/lya-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/assets/lya-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
