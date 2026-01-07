@@ -1,27 +1,32 @@
 const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
-const {
-  buildSystemPrompt,
-  sanitizeAssistantText,
-} = require("../services/globalStyle");
+const { sanitizeAssistantText } = require("../services/globalStyle");
+const { generateDetailedPrompt } = require("../services/promptBuilder");
 
 function chatRouter() {
   const router = express.Router();
 
   // POST /api/chat/stream { model, messages }
   router.post("/chat/stream", async (req, res) => {
-    const { model, messages, persona, personaName, personaNsfw } = req.body;
+    const { model, messages, persona } = req.body;
 
-    if (!model || !messages) {
-      return res.status(400).json({ error: "model et messages requis" });
+    if (!model || !messages || !persona) {
+      return res
+        .status(400)
+        .json({ error: "model, messages, et persona requis" });
     }
 
     let temperature = 1.0;
     if (model.includes("mythomax") || model.includes("dolphin")) {
       temperature = 0.45;
     }
-    const options = { temperature, top_p: 0.9, repeat_penalty: 1.15, num_ctx: 8192 };
-    const systemPrompt = buildSystemPrompt(persona, personaName, personaNsfw);
+    const options = {
+      temperature,
+      top_p: 0.9,
+      repeat_penalty: 1.15,
+      num_ctx: 8192,
+    };
+    const systemPrompt = generateDetailedPrompt(persona);
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
