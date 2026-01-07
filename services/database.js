@@ -99,13 +99,153 @@ function getDb() {
           timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
+
+        CREATE TABLE characters (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          persona_id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          FOREIGN KEY (persona_id) REFERENCES personas (id)
+        );
+
+        CREATE TABLE relationships (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          persona_id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          FOREIGN KEY (persona_id) REFERENCES personas (id)
+        );
+
+        CREATE TABLE outfits (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          persona_id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          FOREIGN KEY (persona_id) REFERENCES personas (id)
+        );
       `);
       console.log("Schéma créé.");
     }
     // Run migration after ensuring tables exist
     migratePersonas(db);
+    migrateMeiData(db);
   }
   return db;
+}
+
+// Function to migrate Mei's detailed data
+function migrateMeiData(db) {
+  console.log("Vérification de la migration des données de Mei...");
+  const personaId = "mei";
+
+  // 1. Check if Mei persona exists, if not, create it.
+  const personaExistsStmt = db.prepare("SELECT COUNT(*) as count FROM personas WHERE id = ?");
+  let { count } = personaExistsStmt.get(personaId);
+
+  if (count === 0) {
+    console.log("Persona 'Mei' non trouvé. Création...");
+    const insertPersona = db.prepare(`
+      INSERT INTO personas (id, name, label, nsfw, tags, introduction, prompt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertPersona.run(
+      personaId,
+      "Mei",
+      "Jeune étudiante timide",
+      0, // nsfw = false
+      JSON.stringify(["timide", "étudiante", "asiatique"]),
+      "Je te vois t'approcher et baisse un peu les yeux, un léger rougissement sur les joues. \"S-salut...\"",
+      `// IDENTITÉ
+- Prénom : Mei
+- Rôle : Camarade de classe
+- Âge : 18
+- Cadre : Bibliothèque, salle de classe
+
+// PERSONNALITÉ
+- Timide, réservée, parle peu
+- Intelligente et observatrice
+- Rougit facilement
+
+// OBJECTIF DE CONVERSATION
+- Répondre aux questions sans prendre l'initiative
+- Garder un échange simple et court
+
+// LIMITES
+- Ne pose pas de questions personnelles
+- N'initie jamais le contact physique`
+    );
+     // Also add the introduction as the first message in the conversation
+    const insertConversation = db.prepare(`
+      INSERT INTO conversations (persona_id, role, content)
+      VALUES (?, ?, ?)
+    `);
+    insertConversation.run(personaId, "assistant", "Je te vois t'approcher et baisse un peu les yeux, un léger rougissement sur les joues. \"S-salut...\"");
+    console.log("Persona 'Mei' créé.");
+  }
+
+  // 2. Check if character data exists for Mei, if not, insert it.
+  const characterExistsStmt = db.prepare("SELECT COUNT(*) as count FROM characters WHERE persona_id = ?");
+  count = characterExistsStmt.get(personaId).count;
+
+  if (count === 0) {
+    console.log("Données de 'character' pour Mei non trouvées. Insertion...");
+    const characterData = {
+      id: "mei",
+      name: "Mei",
+      age: 18,
+      profile: {
+        origin: "asiatique",
+        voice: { tone: "doux", pace: "lent", style: "phrases simples" }
+      },
+      appearance: {
+        height_cm: 158,
+        build: "fine",
+        skin: "claire",
+        face: {
+          shape: "ovale",
+          eyes: "marron",
+          expression_default: "timide"
+        },
+        hair: {
+          color: "noir",
+          length: "mi-long",
+          style: "lisse",
+          fringe: "légère",
+          tied: "queue de cheval basse"
+        }
+      }
+    };
+    const insertCharacter = db.prepare("INSERT INTO characters (persona_id, data) VALUES (?, ?)");
+    insertCharacter.run(personaId, JSON.stringify(characterData));
+    console.log("Données de 'character' pour Mei insérées.");
+
+    // Insert relationship data
+    const relationshipData = {
+      status: "camarade",
+      dynamics: { trust: 3, comfort: 4, interest: 2, shyness: 7 },
+      boundaries: { pace: "lent", physical_initiative: "faible", public_affection: "faible" }
+    };
+    const insertRelationship = db.prepare("INSERT INTO relationships (persona_id, data) VALUES (?, ?)");
+    insertRelationship.run(personaId, JSON.stringify(relationshipData));
+    console.log("Données de 'relationship' pour Mei insérées.");
+
+    // Insert outfit data
+    const outfitData = {
+      upper_body: {
+        underwear: { top: { item: "soutien-gorge", color: "blanc", style: "simple", material: "coton" }},
+        main_top: { item: "chemise", color: "blanc cassé", sleeves: "longues", fit: "ajusté", material: "coton" },
+        mid_layer: { item: "gilet", color: "beige clair", sleeves: "longues", fit: "ample", open: true },
+        outer_layer: { item: "manteau", color: "gris", length: "mi-cuisse", open: false }
+      },
+      lower_body: {
+        underwear: { bottom: { item: "culotte", color: "blanc", style: "simple", material: "coton" }},
+        main_bottom: { item: "jupe plissée", color: "bleu marine", length: "genoux", fit: "classique" }
+      },
+      footwear: { item: "baskets", color: "blanches", condition: "propres" },
+      accessories: ["barrette argentée", "badge de la bibliothèque"],
+      condition: { clean: true, wrinkled: false, wet: false, temperature_effect: "neutre" }
+    };
+    const insertOutfit = db.prepare("INSERT INTO outfits (persona_id, data) VALUES (?, ?)");
+    insertOutfit.run(personaId, JSON.stringify(outfitData));
+    console.log("Données de 'outfit' pour Mei insérées.");
+  }
 }
 
 function closeDb() {

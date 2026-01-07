@@ -425,9 +425,7 @@ async function sendMessage() {
       body: JSON.stringify({
         model,
         messages: chatHistory,
-        persona: selectedPersona.prompt,
-        personaName: selectedPersona.name,
-        personaNsfw: Boolean(selectedPersona.nsfw),
+        persona: selectedPersona,
       }),
     });
 
