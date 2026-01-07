@@ -168,13 +168,34 @@
     }
 
     .persona-card {
+      position: relative; /* For menu button positioning */
       background: #1f1f1f;
       border-radius: 18px;
       overflow: hidden;
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-      cursor: pointer;
       display: flex;
       flex-direction: column;
+    }
+
+    .persona-card-clickable {
+        cursor: pointer;
+    }
+
+    .persona-menu-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 20px;
+      line-height: 32px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 2;
     }
 
     .persona-cover {
@@ -531,6 +552,59 @@
       display: none;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .modal-backdrop.is-visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: #2d2d2d;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .modal p {
+        margin: 0;
+        color: #b3b3b3;
+        font-size: 14px;
+    }
+
+    .modal-button {
+      background: #a7e8ff;
+      color: #0a2d3d;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
     @media (max-width: 600px) {
       .main-wrapper {
         max-width: 100%;
@@ -623,4 +697,15 @@
   </div>
 </div>
   <script src="app.js"></script>
+  <div id="resetModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 class="modal-title">Réinitialiser le personnage</h3>
+      <p>
+        Toute votre conversation avec ce personnage sera définitivement effacée.
+        Cette action est irréversible.
+      </p>
+      <button id="confirmResetBtn" class="modal-button">Réinitialiser</button>
+      <button id="cancelResetBtn" class="modal-button" style="background: #3a3a3a; color: #f2f2f2;">Annuler</button>
+    </div>
+  </div>
 </body>

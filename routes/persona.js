@@ -1,5 +1,5 @@
 const express = require("express");
-const { getDb } = require("../services/database");
+const { getDb, deleteConversation } = require("../services/database");
 
 function personaRouter() {
   const router = express.Router();
@@ -65,6 +65,18 @@ function personaRouter() {
     } catch (error) {
       console.error(`Failed to save message for persona ${personaId}:`, error);
       res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // DELETE /api/personas/:id/conversation
+  router.delete("/personas/:id/conversation", (req, res) => {
+    const personaId = req.params.id;
+    const result = deleteConversation(personaId);
+
+    if (result.success) {
+      res.status(204).send();
+    } else {
+      res.status(500).json({ error: result.error });
     }
   });
 
