@@ -473,6 +473,7 @@
       flex: 1;
       min-height: 0;
       position: relative;
+      overflow: hidden;
     }
 
     .screen-chat::before {
@@ -488,6 +489,15 @@
     .screen-chat > * {
       position: relative;
       z-index: 1;
+    }
+
+    .chat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      flex: 1;
+      min-height: 0;
     }
 
     .chat-header {
@@ -574,15 +584,17 @@
     </div>
 
     <section class="screen screen-chat" data-screen="chat">
-      <div class="chat-header">
-        <button id="backToChats" aria-label="Retour" title="Retour">‹</button>
-        <strong id="chatPersonaName"></strong>
-      </div>
-      <div id="chatBox"></div>
+      <div class="chat-content">
+        <div class="chat-header">
+          <button id="backToChats" aria-label="Retour" title="Retour">‹</button>
+          <strong id="chatPersonaName"></strong>
+        </div>
+        <div id="chatBox"></div>
 
-      <div class="input-row">
-        <input id="msgInput" type="text" placeholder="Ton message...">
-        <button id="sendBtn">Envoyer</button>
+        <div class="input-row">
+          <input id="msgInput" type="text" placeholder="Ton message...">
+          <button id="sendBtn">Envoyer</button>
+        </div>
       </div>
     </section>
 
