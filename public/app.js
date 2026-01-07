@@ -261,22 +261,32 @@ function append(role, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function appendStreamingAssistant(name) {
+function appendStreamingAssistantWithIndicator() {
   const messageContainer = document.createElement("div");
   messageContainer.className = "message-container assistant-message";
 
   const messageBubble = document.createElement("div");
   messageBubble.className = "message-bubble";
 
+  const typingIndicator = document.createElement("div");
+  typingIndicator.className = "typing-indicator";
+
+  for (let i = 0; i < 3; i += 1) {
+    const dot = document.createElement("span");
+    dot.className = "typing-dot";
+    typingIndicator.appendChild(dot);
+  }
+
   const message = document.createElement("span");
   message.className = "chat-text";
 
+  messageBubble.appendChild(typingIndicator);
   messageBubble.appendChild(message);
   messageContainer.appendChild(messageBubble);
   chatBox.appendChild(messageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  return message;
+  return { message, typingIndicator, messageContainer };
 }
 
 async function loadModels() {
@@ -384,7 +394,8 @@ async function sendMessage() {
   append("user", userMessage);
   chatHistory.push({ role: "user", content: userMessage });
 
-  const assistantTextNode = appendStreamingAssistant(selectedPersona.name);
+  const { message: assistantTextNode, typingIndicator, messageContainer } = appendStreamingAssistantWithIndicator();
+  let activeTypingIndicator = typingIndicator;
   msgInput.value = "";
   msgInput.focus();
 
@@ -395,6 +406,17 @@ async function sendMessage() {
   sendBtn.disabled = true;
   let fullAssistantResponse = "";
   let rawResponse = "";
+
+  const clearTypingIndicator = () => {
+    if (!activeTypingIndicator) return;
+    activeTypingIndicator.remove();
+    activeTypingIndicator = null;
+  };
+
+  const cleanupEmptyAssistantMessage = () => {
+    if (fullAssistantResponse) return;
+    messageContainer.remove();
+  };
 
   try {
     const r = await fetch("/api/chat/stream", {
@@ -411,11 +433,15 @@ async function sendMessage() {
 
     if (!r.ok) {
       const data = await r.json().catch(() => ({}));
+      clearTypingIndicator();
+      cleanupEmptyAssistantMessage();
       append("error", data?.error || "Erreur serveur");
       return;
     }
 
     if (!r.body) {
+      clearTypingIndicator();
+      cleanupEmptyAssistantMessage();
       append("error", "Réponse streaming indisponible");
       return;
     }
@@ -448,16 +474,20 @@ async function sendMessage() {
         if (event.type === "params") {
           logRequestEl.textContent = JSON.stringify(event.params, null, 2);
         } else if (event.type === "delta") {
+          clearTypingIndicator();
           fullAssistantResponse += event.delta || "";
           rawResponse += event.delta || "";
           logResponseEl.textContent = rawResponse;
           setQuotedContent(assistantTextNode, fullAssistantResponse);
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "error") {
+          clearTypingIndicator();
+          cleanupEmptyAssistantMessage();
           append("error", event.error || "Erreur serveur");
         }
       }
     }
+    clearTypingIndicator();
     chatHistory.push({ role: "assistant", content: fullAssistantResponse });
 
     // Save user and assistant messages to DB
@@ -479,8 +509,12 @@ async function sendMessage() {
 
     // updateChatList(); // Needs rework
   } catch (e) {
+    clearTypingIndicator();
+    cleanupEmptyAssistantMessage();
     append("error", e.message);
   } finally {
+    clearTypingIndicator();
+    cleanupEmptyAssistantMessage();
     sendBtn.disabled = false;
   }
 }
