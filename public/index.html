@@ -325,9 +325,6 @@
       border: 1px solid #2d2d2d;
       padding: 10px;
       overflow: auto;
-      background-image: url("/assets/bg.png");
-      background-size: cover;
-      background-position: center;
       display: flex;
       flex-direction: column;
       border-radius: 18px;
@@ -475,6 +472,22 @@
     .screen-chat {
       flex: 1;
       min-height: 0;
+      position: relative;
+    }
+
+    .screen-chat::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("/assets/bg.png");
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+    }
+
+    .screen-chat > * {
+      position: relative;
+      z-index: 1;
     }
 
     .chat-header {
