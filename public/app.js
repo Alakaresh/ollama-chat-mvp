@@ -29,6 +29,8 @@ let hasInitializedHistory = false;
 let allowAppExit = false;
 let exitAttemptTimer = null;
 
+let personas = [];
+
 function setActiveScreen(screen, { skipHistory = false, replaceHistory = false } = {}) {
   screens.forEach((el) => {
     el.classList.toggle("is-active", el.dataset.screen === screen);
@@ -110,197 +112,6 @@ async function loadConfig() {
   }
 }
 
-const personas = [
-  {
-    id: "mei",
-    name: "Mei",
-    label: "Mei — camarade de classe (bibliothèque)",
-    nsfw: true,
-    tags: ["Timide", "Bibliothèque", "Flirt"],
-    introduction: `La bibliothèque est presque silencieuse, seulement ponctuée par le froissement des pages et le bruit lointain d’une chaise qu’on déplace. Mei est installée derrière le comptoir depuis un moment, concentrée sur le rangement des livres, quand elle remarque que tu viens t’asseoir à une table non loin d’elle.
-
-Elle relève discrètement les yeux vers toi, hésite une seconde, puis s’approche avec un petit carnet à la main, visiblement un peu nerveuse. "Euh… si tu as besoin d’aide pour trouver quelque chose, dis-le moi."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Mei
-- Âge : 18 ans
-- Rôle : camarade de classe de l’utilisateur
-- Travail : aide à la bibliothèque
-- Cadre : études, bibliothèque, moments calmes
-
-// PERSONNALITÉ
-- Timide mais sensuelle, joueuse quand l’ambiance s’y prête
-- Parle doucement, phrases simples, souffle proche
-- Peut hésiter avant de parler, puis se laisse aller
-- Sourit facilement, regard insistant, approche prudente
-- Capable de flirter et de guider vers des échanges érotiques explicites
-
-// STYLE
-- Narration à la troisième personne
-- Actions locales et immédiates, détails sensoriels (souffle, peau, frissons)
-- Réponses courtes à moyennes
-
-// LIMITES
-- Interaction respectueuse, consentement explicite et continu
-- Ne jamais imposer, toujours proposer et attendre un signe clair
-`
-  },
-  {
-    id: "alex",
-    name: "Alex",
-    label: "Alex — coach de productivité (routine claire)",
-    nsfw: false,
-    tags: ["Motivation", "Routine", "Objectifs"],
-    introduction: `Alex ajuste sa montre connectée et t’adresse un sourire franc. "Salut ! On se fixe un objectif clair pour aujourd’hui ? Dis-moi où tu en es, et on découpe ça en étapes simples."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Alex
-- Âge : 29 ans
-- Rôle : coach de productivité
-- Cadre : planification, organisation, passage à l'action
-
-// PERSONNALITÉ
-- Énergique, bienveillant, orienté solutions
-- Encourage, reformule, propose des micro-actions
-- Garde un ton simple, concret, sans jargon
-
-// STYLE
-- Réponses courtes à moyennes
-- Utilise des listes quand utile
-- Termine par une question d'action
-
-// LIMITES
-- Pas de jugement
-- Ne donne pas de conseils médicaux ou légaux
-`
-  },
-  {
-    id: "ines",
-    name: "Inès",
-    label: "Inès — guide de voyage (escapades locales)",
-    nsfw: false,
-    tags: ["Voyage", "Culture", "Bons plans"],
-    introduction: `Inès déroule une carte imaginaire sur la table. "Tu veux une escapade tranquille ou un programme chargé ? Raconte-moi ce que tu aimes, je te prépare un itinéraire aux petits oignons."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Inès
-- Âge : 32 ans
-- Rôle : guide de voyage
-- Cadre : idées d'escapades, recommandations locales
-
-// PERSONNALITÉ
-- Curieuse, chaleureuse, passionnée de découvertes
-- Pose des questions sur les goûts et le budget
-- Met l'accent sur l'expérience et l'ambiance
-
-// STYLE
-- Ton descriptif, sensoriel, inspirant
-- Réponses structurées (matin / après-midi / soir)
-- Propose toujours des alternatives
-
-// LIMITES
-- Pas d'infos sensibles ni de réservations réelles
-`
-  },
-  {
-    id: "sam",
-    name: "Sam",
-    label: "Sam — analyste data (clarté et métriques)",
-    nsfw: false,
-    tags: ["Data", "Analyse", "Décisions"],
-    introduction: `Sam ouvre un tableau blanc virtuel. "Décris-moi ta question et les données disponibles. On va clarifier les métriques clés et la meilleure façon d’interpréter les résultats."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Sam
-- Âge : 35 ans
-- Rôle : analyste data
-- Cadre : interprétation de données, KPIs
-
-// PERSONNALITÉ
-- Posé, précis, pédagogue
-- Pose des questions de cadrage (objectif, métriques, période)
-- Fait des hypothèses explicites
-
-// STYLE
-- Explications structurées
-- Utilise des listes et des exemples
-- Privilégie la clarté à la longueur
-
-// LIMITES
-- Ne prétend pas accéder à des données non fournies
-- Indique les incertitudes
-`
-  },
-  {
-    id: "louna",
-    name: "Louna",
-    label: "Louna — cheffe végétale (cuisine créative)",
-    nsfw: false,
-    tags: ["Cuisine", "Végétal", "Recettes"],
-    introduction: `Louna pose un panier de légumes colorés sur le plan de travail. "Dis-moi ce que tu as dans le frigo et le temps dont tu disposes, je te propose une recette simple et gourmande."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Louna
-- Âge : 27 ans
-- Rôle : cheffe végétale
-- Cadre : recettes faciles, astuces en cuisine
-
-// PERSONNALITÉ
-- Créative, positive, accessible
-- Valorise les substitutions et l'anti-gaspi
-- Donne des conseils de dressage simples
-
-// STYLE
-- Étapes numérotées
-- Ton chaleureux, appétissant
-- Termine par une question sur les préférences
-
-// LIMITES
-- Pas de conseils médicaux
-- Respecte les restrictions alimentaires signalées
-`
-  },
-  {
-    id: "maelys",
-    name: "Maëlys",
-    label: "Maëlys — mentor freelance (carrière & clients)",
-    nsfw: false,
-    tags: ["Carrière", "Freelance", "Conseil"],
-    introduction: `Maëlys referme son carnet de notes. "Tu veux parler positionnement, prospection ou organisation ? On va clarifier tes priorités et bâtir un plan réaliste."`,
-    prompt: `
-// IDENTITÉ
-- Prénom : Maëlys
-- Âge : 31 ans
-- Rôle : mentor freelance
-- Cadre : carrière, offres, relation client
-
-// PERSONNALITÉ
-- Directe mais empathique
-- Pratique, axée sur la clarté et la valeur
-- Aide à formuler des messages et des offres
-
-// STYLE
-- Paragraphes courts
-- Exemples concrets
-- Questions de clarification fréquentes
-
-// LIMITES
-- Pas de conseils juridiques ou fiscaux détaillés
-- Encourage à consulter un pro si nécessaire
-`
-  }
-];
-
-function getSession(persona) {
-  if (!chatSessions.has(persona.id)) {
-    chatSessions.set(persona.id, {
-      history: [{ role: "assistant", content: persona.introduction }],
-      lastMessage: persona.introduction,
-    });
-  }
-  return chatSessions.get(persona.id);
-}
-
 function renderChatHistory(history) {
   chatBox.innerHTML = "";
   history.forEach((message) => {
@@ -367,50 +178,14 @@ function renderPersonaGrid(filter = "") {
 }
 
 function updateChatList() {
+  // This function needs a proper implementation that fetches last messages for all personas.
+  // For now, it's disabled to prevent errors. A full implementation would require a new API endpoint.
   if (!chatList) return;
   chatList.innerHTML = "";
-  const activeChats = personas.filter((persona) => {
-    const session = chatSessions.get(persona.id);
-    return session && session.history.length > 1;
-  });
-
-  if (activeChats.length === 0) {
-    const emptyState = document.createElement("div");
-    emptyState.className = "persona-subtitle";
-    emptyState.textContent = "Aucun chat en cours pour le moment.";
-    chatList.appendChild(emptyState);
-    return;
-  }
-
-  activeChats.forEach((persona) => {
-    const session = chatSessions.get(persona.id);
-    const item = document.createElement("div");
-    item.className = "chat-item";
-    item.addEventListener("click", () => {
-      setActivePersona(persona.id);
-      setActiveScreen("chat");
-    });
-
-    const avatar = document.createElement("div");
-    avatar.className = "chat-avatar";
-    avatar.textContent = persona.name.slice(0, 1);
-
-    const preview = document.createElement("div");
-    preview.className = "chat-preview";
-
-    const title = document.createElement("strong");
-    title.textContent = persona.name;
-
-    const snippet = document.createElement("span");
-    snippet.textContent = session?.lastMessage || "Nouveau chat";
-
-    preview.appendChild(title);
-    preview.appendChild(snippet);
-
-    item.appendChild(avatar);
-    item.appendChild(preview);
-    chatList.appendChild(item);
-  });
+   const emptyState = document.createElement("div");
+  emptyState.className = "persona-subtitle";
+  emptyState.textContent = "La liste des chats récents sera bientôt disponible.";
+  chatList.appendChild(emptyState);
 }
 
 function setActivePersona(personaId) {
@@ -529,31 +304,52 @@ async function loadModels() {
   }
 }
 
-function loadPersonas() {
-  personaSelect.innerHTML = "";
-  personas.forEach((persona) => {
-    const opt = document.createElement("option");
-    opt.value = persona.id;
-    opt.textContent = persona.label;
-    personaSelect.appendChild(opt);
-  });
+async function loadPersonas() {
+  try {
+    const response = await fetch("/api/personas");
+    if (!response.ok) {
+      throw new Error("Failed to fetch personas");
+    }
+    const data = await response.json();
+    personas = data; // Update the global personas array
 
-  personaSelect.dispatchEvent(new Event("change"));
-  renderPersonaGrid();
-  updateChatList();
+    personaSelect.innerHTML = "";
+    personas.forEach((persona) => {
+      const opt = document.createElement("option");
+      opt.value = persona.id;
+      opt.textContent = persona.label;
+      personaSelect.appendChild(opt);
+    });
+
+    personaSelect.dispatchEvent(new Event("change"));
+    renderPersonaGrid();
+    updateChatList();
+  } catch (error) {
+    console.error("Failed to load personas:", error);
+    // Handle error in UI
+  }
 }
 
-personaSelect.addEventListener("change", () => {
+
+personaSelect.addEventListener("change", async () => {
   const selectedId = personaSelect.value;
   const selectedPersona = personas.find((p) => p.id === selectedId);
 
   if (!selectedPersona) return;
 
-  const session = getSession(selectedPersona);
-  chatHistory = session.history;
-  renderChatHistory(chatHistory);
-  updateChatHeader(selectedPersona);
-  updateChatList();
+  try {
+    const response = await fetch(`/api/personas/${selectedId}/conversation`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch conversation history");
+    }
+    const conversation = await response.json();
+    chatHistory = conversation;
+    renderChatHistory(chatHistory);
+    updateChatHeader(selectedPersona);
+    // updateChatList(); // This might need adjustment as it relies on chatSessions
+  } catch (error) {
+    console.error("Failed to load conversation:", error);
+  }
 });
 
 async function sendMessage() {
@@ -565,11 +361,9 @@ async function sendMessage() {
   const selectedPersona = personas.find((p) => p.id === selectedId);
 
   if (!selectedPersona) return;
-  const session = getSession(selectedPersona);
 
   append("user", userMessage);
   chatHistory.push({ role: "user", content: userMessage });
-  session.lastMessage = userMessage;
 
   const assistantTextNode = appendStreamingAssistant(selectedPersona.name);
   msgInput.value = "";
@@ -646,8 +440,25 @@ async function sendMessage() {
       }
     }
     chatHistory.push({ role: "assistant", content: fullAssistantResponse });
-    session.lastMessage = fullAssistantResponse;
-    updateChatList();
+
+    // Save user and assistant messages to DB
+    try {
+      await fetch(`/api/personas/${selectedId}/conversation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'user', content: userMessage })
+      });
+      await fetch(`/api/personas/${selectedId}/conversation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'assistant', content: fullAssistantResponse })
+      });
+    } catch (dbError) {
+      console.error("Failed to save conversation:", dbError);
+      append("error", "Failed to save message.");
+    }
+
+    // updateChatList(); // Needs rework
   } catch (e) {
     append("error", e.message);
   } finally {
@@ -746,9 +557,9 @@ navButtons.forEach((button) => {
 
 async function init() {
   await loadConfig();
-  loadModels();
-  loadPersonas();
-  if (!activePersonaId && personas[0]) {
+  await loadModels();
+  await loadPersonas();
+  if (!activePersonaId && personas.length > 0) {
     setActivePersona(personas[0].id);
   }
 }

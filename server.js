@@ -1,7 +1,9 @@
 const express = require("express");
+const { getDb } = require("./services/database");
 
 const { modelsRouter } = require("./routes/models");
-const { chatRouter } = require("./routes/chat"); // nouveau: chat sans DB
+const { chatRouter } = require("./routes/chat");
+const { personaRouter } = require("./routes/persona");
 
 const app = express();
 const appMode = (process.env.APP_MODE || "dev").toLowerCase();
@@ -29,7 +31,9 @@ app.get("/api/config", (req, res) => {
 });
 
 app.use("/api/models", modelsRouter());
-app.use("/api", chatRouter());
+app.use("/api", chatRouter()); // keep for streaming
+app.use("/api", personaRouter());
 
 const PORT = 8080;
+getDb();
 app.listen(PORT, () => console.log(`✅ Server: http://localhost:${PORT}`));
