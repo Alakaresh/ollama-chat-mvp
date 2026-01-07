@@ -116,4 +116,23 @@ function closeDb() {
   }
 }
 
-module.exports = { getDb, closeDb };
+function deleteConversation(personaId) {
+  const db = getDb();
+  try {
+    const stmt = db.prepare("DELETE FROM conversations WHERE persona_id = ?");
+    stmt.run(personaId);
+    // Also re-insert the introduction message to truly "reset" the chat
+    const personaStmt = db.prepare("SELECT introduction FROM personas WHERE id = ?");
+    const persona = personaStmt.get(personaId);
+    if (persona) {
+      const insertIntroStmt = db.prepare("INSERT INTO conversations (persona_id, role, content) VALUES (?, 'assistant', ?)");
+      insertIntroStmt.run(personaId, persona.introduction);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to delete conversation for persona ${personaId}:`, error);
+    return { success: false, error: "Internal Server Error" };
+  }
+}
+
+module.exports = { getDb, closeDb, deleteConversation };

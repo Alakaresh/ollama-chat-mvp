@@ -17,9 +17,14 @@ const chatPersonaName = document.getElementById("chatPersonaName");
 const backToChatsBtn = document.getElementById("backToChats");
 const navButtons = document.querySelectorAll("[data-nav-target]");
 const screens = document.querySelectorAll("[data-screen]");
+const resetModal = document.getElementById("resetModal");
+const confirmResetBtn = document.getElementById("confirmResetBtn");
+const cancelResetBtn = document.getElementById("cancelResetBtn");
+
 
 let chatHistory = [];
 let activePersonaId = null;
+let personaIdToReset = null;
 let currentAppMode = "prod";
 let serverAppMode = "prod";
 const appModeStorageKey = "appModeOverride";
@@ -138,7 +143,20 @@ function renderPersonaGrid(filter = "") {
   filtered.forEach((persona) => {
     const card = document.createElement("div");
     card.className = "persona-card";
-    card.addEventListener("click", () => {
+
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "persona-menu-btn";
+    menuBtn.innerHTML = "&#8942;"; // Vertical ellipsis
+    menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        personaIdToReset = persona.id;
+        resetModal.classList.add("is-visible");
+    });
+    card.appendChild(menuBtn);
+
+    const clickableWrapper = document.createElement("div");
+    clickableWrapper.className = "persona-card-clickable";
+    clickableWrapper.addEventListener("click", () => {
       setActivePersona(persona.id);
       setActiveScreen("chat");
     });
@@ -146,7 +164,7 @@ function renderPersonaGrid(filter = "") {
     const cover = document.createElement("div");
     cover.className = "persona-cover";
     cover.textContent = persona.name;
-    card.appendChild(cover);
+    clickableWrapper.appendChild(cover);
 
     const tags = document.createElement("div");
     tags.className = "persona-tags";
@@ -156,7 +174,7 @@ function renderPersonaGrid(filter = "") {
       tagEl.textContent = `#${tag}`;
       tags.appendChild(tagEl);
     });
-    card.appendChild(tags);
+    clickableWrapper.appendChild(tags);
 
     const content = document.createElement("div");
     content.className = "persona-content";
@@ -171,8 +189,9 @@ function renderPersonaGrid(filter = "") {
 
     content.appendChild(title);
     content.appendChild(subtitle);
-    card.appendChild(content);
+    clickableWrapper.appendChild(content);
 
+    card.appendChild(clickableWrapper);
     personaGrid.appendChild(card);
   });
 }
@@ -554,6 +573,54 @@ navButtons.forEach((button) => {
     }
   });
 });
+
+if (resetModal) {
+  cancelResetBtn.addEventListener("click", () => {
+    resetModal.classList.remove("is-visible");
+    personaIdToReset = null;
+  });
+
+  resetModal.addEventListener("click", (e) => {
+    if (e.target === resetModal) {
+      resetModal.classList.remove("is-visible");
+      personaIdToReset = null;
+    }
+  });
+
+  confirmResetBtn.addEventListener("click", async () => {
+    if (!personaIdToReset) return;
+
+    try {
+      const response = await fetch(`/api/personas/${personaIdToReset}/conversation`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset conversation');
+      }
+
+      // If the reset persona is the active one, reload its view
+      if (personaIdToReset === activePersonaId) {
+        // Force a reload of the conversation history
+        const selectedPersona = personas.find((p) => p.id === activePersonaId);
+        const convResponse = await fetch(`/api/personas/${activePersonaId}/conversation`);
+        const conversation = await convResponse.json();
+        chatHistory = conversation;
+        renderChatHistory(chatHistory);
+        updateChatHeader(selectedPersona);
+      }
+
+      console.log(`Conversation for ${personaIdToReset} has been reset.`);
+
+    } catch (error) {
+      console.error("Error resetting conversation:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      resetModal.classList.remove("is-visible");
+      personaIdToReset = null;
+    }
+  });
+}
 
 async function init() {
   await loadConfig();
