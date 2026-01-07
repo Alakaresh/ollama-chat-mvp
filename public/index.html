@@ -476,8 +476,10 @@
       background: none;
       border: none;
       color: #a7e8ff;
-      font-size: 14px;
+      font-size: 40px;
       cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
     }
 
     body[data-app-mode="dev"] .chat-header {
@@ -553,7 +555,7 @@
 
     <section class="screen screen-chat" data-screen="chat">
       <div class="chat-header">
-        <button id="backToChats">← Retour</button>
+        <button id="backToChats" aria-label="Retour" title="Retour">‹</button>
         <strong id="chatPersonaName"></strong>
       </div>
       <div id="chatBox"></div>
