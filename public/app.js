@@ -12,6 +12,7 @@ const chatList = document.getElementById("chatList");
 const personaSearch = document.getElementById("personaSearch");
 const nsfwToggle = document.getElementById("nsfwToggle");
 const appShell = document.querySelector(".app-shell");
+const bottomNav = document.querySelector(".bottom-nav");
 const chatPersonaName = document.getElementById("chatPersonaName");
 const backToChatsBtn = document.getElementById("backToChats");
 const navButtons = document.querySelectorAll("[data-nav-target]");
@@ -34,6 +35,9 @@ function setActiveScreen(screen) {
   });
   if (appShell) {
     appShell.classList.toggle("is-hidden", screen === "chat");
+  }
+  if (bottomNav) {
+    bottomNav.classList.toggle("is-hidden", screen === "chat");
   }
 }
 
@@ -523,7 +527,7 @@ if (nsfwToggle) {
 
 if (backToChatsBtn) {
   backToChatsBtn.addEventListener("click", () => {
-    setActiveScreen("chats");
+    setActiveScreen("home");
   });
 }
 
