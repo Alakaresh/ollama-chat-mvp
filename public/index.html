@@ -20,6 +20,9 @@
       padding: 16px;
       flex: 0 0 414px;
       width: 414px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .app-shell {
@@ -320,15 +323,13 @@
 
     #chatBox {
       border: 1px solid #2d2d2d;
-      height: 58vh;
       padding: 10px;
       overflow: auto;
-      background-image: url("/assets/bg.png");
-      background-size: cover;
-      background-position: center;
       display: flex;
       flex-direction: column;
       border-radius: 18px;
+      flex: 1;
+      min-height: 0;
     }
 
 
@@ -373,7 +374,8 @@
     .input-row {
       display: flex;
       gap: 10px;
-      margin-top: 10px;
+      margin-top: auto;
+      padding-top: 10px;
     }
 
     .input-row input {
@@ -403,6 +405,7 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 16px;
+      min-height: 100vh;
     }
 
     #log-container {
@@ -466,6 +469,37 @@
       display: flex;
     }
 
+    .screen-chat {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-chat::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("/assets/bg.png");
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+    }
+
+    .screen-chat > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .chat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
     .chat-header {
       display: flex;
       align-items: center;
@@ -497,10 +531,6 @@
         max-width: 100%;
         flex: 1 1 auto;
         padding: 12px;
-      }
-
-      #chatBox {
-        height: 62vh;
       }
     }
   </style>
@@ -554,15 +584,17 @@
     </div>
 
     <section class="screen screen-chat" data-screen="chat">
-      <div class="chat-header">
-        <button id="backToChats" aria-label="Retour" title="Retour">‹</button>
-        <strong id="chatPersonaName"></strong>
-      </div>
-      <div id="chatBox"></div>
+      <div class="chat-content">
+        <div class="chat-header">
+          <button id="backToChats" aria-label="Retour" title="Retour">‹</button>
+          <strong id="chatPersonaName"></strong>
+        </div>
+        <div id="chatBox"></div>
 
-      <div class="input-row">
-        <input id="msgInput" type="text" placeholder="Ton message...">
-        <button id="sendBtn">Envoyer</button>
+        <div class="input-row">
+          <input id="msgInput" type="text" placeholder="Ton message...">
+          <button id="sendBtn">Envoyer</button>
+        </div>
       </div>
     </section>
 
