@@ -388,6 +388,41 @@
       font-weight: bold !important;
     }
 
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 16px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #0a2d3d;
+      opacity: 0.4;
+      animation: typingPulse 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+      40% {
+        transform: translateY(-4px);
+        opacity: 1;
+      }
+    }
+
     .input-row {
       display: flex;
       gap: 10px;
