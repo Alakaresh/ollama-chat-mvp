@@ -463,6 +463,16 @@
       display: flex;
     }
 
+    .screen-home {
+      min-height: 0;
+    }
+
+    .persona-scroll {
+      max-height: 60vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
     .screen-chat {
       flex: 1;
       min-height: 0;
@@ -568,7 +578,9 @@
           </span>
         </div>
         <p class="section-title">Personas</p>
-        <div id="personaGrid" class="persona-grid"></div>
+        <div class="persona-scroll">
+          <div id="personaGrid" class="persona-grid"></div>
+        </div>
       </section>
       <section class="screen screen-chats" data-screen="chats">
         <p class="section-title">Chats en cours</p>
