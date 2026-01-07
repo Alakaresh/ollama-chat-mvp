@@ -438,9 +438,15 @@
       max-width: 100%;
     }
 
+    body[data-app-mode="prod"] {
+      overflow: hidden;
+    }
+
     body[data-app-mode="prod"] .gsm-container {
       width: 100%;
       max-width: 100%;
+      height: 100vh;
+      overflow: hidden;
     }
 
     body[data-app-mode="dev"] .app-shell {
