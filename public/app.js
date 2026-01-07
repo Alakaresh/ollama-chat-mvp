@@ -519,32 +519,14 @@ async function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 
-const normalizeLogPayload = (value) => {
-  if (typeof value === "string") {
-    return value
-      .replace(/\\\\/g, "\\")
-      .replace(/\\n/g, "\n")
-      .replace(/\\r/g, "\r")
-      .replace(/\\t/g, "\t")
-      .replace(/\\"/g, "\"");
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeLogPayload(item));
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, normalizeLogPayload(item)])
-    );
-  }
-
-  return value;
-};
-
 const formatLogJson = (payload) => {
   if (!payload) return "";
-  return JSON.stringify(normalizeLogPayload(payload), null, 2);
+  return JSON.stringify(payload, null, 2)
+    .replace(/\\\\/g, "\\")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\\t/g, "\t")
+    .replace(/\\"/g, "\"");
 };
 msgInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage();
