@@ -25,8 +25,11 @@ let serverAppMode = "prod";
 const appModeStorageKey = "appModeOverride";
 const nsfwStorageKey = "showNsfw";
 const chatSessions = new Map();
+let hasInitializedHistory = false;
+let allowAppExit = false;
+let exitAttemptTimer = null;
 
-function setActiveScreen(screen) {
+function setActiveScreen(screen, { skipHistory = false, replaceHistory = false } = {}) {
   screens.forEach((el) => {
     el.classList.toggle("is-active", el.dataset.screen === screen);
   });
@@ -38,6 +41,26 @@ function setActiveScreen(screen) {
   }
   if (bottomNav) {
     bottomNav.classList.toggle("is-hidden", screen === "chat");
+  }
+  if (screen === "chats") {
+    updateChatList();
+  }
+  if (skipHistory) {
+    return;
+  }
+  if (!hasInitializedHistory) {
+    history.replaceState({ screen }, "", window.location.pathname);
+    history.pushState({ screen }, "", window.location.pathname);
+    hasInitializedHistory = true;
+    return;
+  }
+  if (history.state?.screen === screen) {
+    return;
+  }
+  if (replaceHistory) {
+    history.replaceState({ screen }, "", window.location.pathname);
+  } else {
+    history.pushState({ screen }, "", window.location.pathname);
   }
 }
 
@@ -527,18 +550,52 @@ if (nsfwToggle) {
 
 if (backToChatsBtn) {
   backToChatsBtn.addEventListener("click", () => {
-    setActiveScreen("home");
+    if (history.length > 1) {
+      history.back();
+      return;
+    }
+    setActiveScreen("home", { replaceHistory: true });
   });
 }
+
+window.addEventListener("popstate", (event) => {
+  const targetScreen = event.state?.screen;
+  if (targetScreen) {
+    setActiveScreen(targetScreen, { skipHistory: true });
+    allowAppExit = false;
+    if (exitAttemptTimer) {
+      clearTimeout(exitAttemptTimer);
+      exitAttemptTimer = null;
+    }
+    return;
+  }
+  const activeScreen = document.querySelector(".screen.is-active")?.dataset.screen || "home";
+  if (allowAppExit) {
+    allowAppExit = false;
+    if (exitAttemptTimer) {
+      clearTimeout(exitAttemptTimer);
+      exitAttemptTimer = null;
+    }
+    history.back();
+    return;
+  }
+  allowAppExit = true;
+  if (exitAttemptTimer) {
+    clearTimeout(exitAttemptTimer);
+  }
+  exitAttemptTimer = setTimeout(() => {
+    allowAppExit = false;
+    exitAttemptTimer = null;
+  }, 1500);
+  setActiveScreen(activeScreen, { skipHistory: true });
+  history.pushState({ screen: activeScreen }, "", window.location.pathname);
+});
 
 navButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const target = button.dataset.navTarget;
     if (target) {
       setActiveScreen(target);
-      if (target === "chats") {
-        updateChatList();
-      }
     }
   });
 });
