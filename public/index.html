@@ -453,6 +453,17 @@
       display: none;
     }
 
+    #home-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    #home-view:not(.is-active) {
+      display: none;
+    }
+
     .screen {
       display: none;
       flex-direction: column;
@@ -563,33 +574,39 @@
       <select id="personaSelect"></select>
     </div>
 
-    <div class="app-shell" data-prod-only>
-      <header class="app-header">
-        <h1>Accueil</h1>
-      </header>
-      <section class="screen screen-home is-active" data-screen="home">
-        <div class="search-row">
-          <div class="search-field">
-            🔍
-            <input id="personaSearch" type="text" placeholder="Rechercher un personnage">
+    <div id="home-view" class="is-active">
+      <div class="app-shell" data-prod-only>
+        <header class="app-header">
+          <h1>Accueil</h1>
+        </header>
+        <section class="screen screen-home is-active" data-screen="home">
+          <div class="search-row">
+            <div class="search-field">
+              🔍
+              <input id="personaSearch" type="text" placeholder="Rechercher un personnage">
+            </div>
+            <span class="nsfw-toggle">
+              <span>NSFW</span>
+              <label class="nsfw-switch" for="nsfwToggle">
+                <input id="nsfwToggle" type="checkbox">
+                <span class="nsfw-slider" aria-hidden="true"></span>
+              </label>
+            </span>
           </div>
-          <span class="nsfw-toggle">
-            <span>NSFW</span>
-            <label class="nsfw-switch" for="nsfwToggle">
-              <input id="nsfwToggle" type="checkbox">
-              <span class="nsfw-slider" aria-hidden="true"></span>
-            </label>
-          </span>
-        </div>
-        <p class="section-title">Personas</p>
-        <div class="persona-scroll">
-          <div id="personaGrid" class="persona-grid"></div>
-        </div>
-      </section>
-      <section class="screen screen-chats" data-screen="chats">
-        <p class="section-title">Chats en cours</p>
-        <div id="chatList" class="chat-list"></div>
-      </section>
+          <p class="section-title">Personas</p>
+          <div class="persona-scroll">
+            <div id="personaGrid" class="persona-grid"></div>
+          </div>
+        </section>
+        <section class="screen screen-chats" data-screen="chats">
+          <p class="section-title">Chats en cours</p>
+          <div id="chatList" class="chat-list"></div>
+        </section>
+      </div>
+      <nav class="bottom-nav" data-prod-only>
+        <button type="button" data-nav-target="home" class="active">Accueil</button>
+        <button type="button" data-nav-target="chats">Chat</button>
+      </nav>
     </div>
 
     <section class="screen screen-chat" data-screen="chat">
@@ -606,11 +623,6 @@
         </div>
       </div>
     </section>
-
-    <nav class="bottom-nav" data-prod-only>
-      <button type="button" data-nav-target="home" class="active">Accueil</button>
-      <button type="button" data-nav-target="chats">Chat</button>
-    </nav>
   </div>
   <div id="log-container" data-dev-only>
     <h2>Logs</h2>

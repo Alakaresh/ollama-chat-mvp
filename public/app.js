@@ -30,18 +30,26 @@ let allowAppExit = false;
 let exitAttemptTimer = null;
 
 function setActiveScreen(screen, { skipHistory = false, replaceHistory = false } = {}) {
-  screens.forEach((el) => {
-    el.classList.toggle("is-active", el.dataset.screen === screen);
-  });
-  navButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.navTarget === screen);
-  });
-  if (appShell) {
-    appShell.classList.toggle("is-hidden", screen === "chat");
+  const homeView = document.getElementById("home-view");
+  const chatScreen = document.querySelector('.screen[data-screen="chat"]');
+
+  if (screen === "chat") {
+    homeView.classList.remove("is-active");
+    chatScreen.classList.add("is-active");
+  } else {
+    homeView.classList.add("is-active");
+    chatScreen.classList.remove("is-active");
+
+    screens.forEach((el) => {
+      if (el.dataset.screen !== "chat") {
+        el.classList.toggle("is-active", el.dataset.screen === screen);
+      }
+    });
+    navButtons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.navTarget === screen);
+    });
   }
-  if (bottomNav) {
-    bottomNav.classList.toggle("is-hidden", screen === "chat");
-  }
+
   if (screen === "chats") {
     updateChatList();
   }
