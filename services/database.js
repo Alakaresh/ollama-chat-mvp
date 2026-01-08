@@ -123,6 +123,13 @@ function getDb() {
         );
       `);
       console.log("Schéma créé.");
+    } else {
+      const columns = db.prepare("PRAGMA table_info(personas)").all();
+      const hasEnvironment = columns.some((column) => column.name === "environment");
+      if (!hasEnvironment) {
+        console.log("Ajout de la colonne 'environment' à la table personas...");
+        db.exec("ALTER TABLE personas ADD COLUMN environment TEXT");
+      }
     }
     // Run migration after ensuring tables exist
     migratePersonas(db);
