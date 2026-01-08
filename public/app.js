@@ -17,6 +17,7 @@ const chatPersonaName = document.getElementById("chatPersonaName");
 const backToChatsBtn = document.getElementById("backToChats");
 const navButtons = document.querySelectorAll("[data-nav-target]");
 const screens = document.querySelectorAll("[data-screen]");
+const chatScreen = document.querySelector(".screen-chat");
 const resetModal = document.getElementById("resetModal");
 const confirmResetBtn = document.getElementById("confirmResetBtn");
 const cancelResetBtn = document.getElementById("cancelResetBtn");
@@ -148,6 +149,13 @@ function updateChatHeader(persona) {
   if (chatPersonaName) {
     chatPersonaName.textContent = persona ? persona.name : "";
   }
+  if (chatScreen) {
+    if (persona?.image) {
+      chatScreen.style.setProperty("--chat-bg-image", `url("${persona.image}")`);
+    } else {
+      chatScreen.style.removeProperty("--chat-bg-image");
+    }
+  }
 }
 
 function renderPersonaGrid(filter = "") {
@@ -183,7 +191,14 @@ function renderPersonaGrid(filter = "") {
 
     const cover = document.createElement("div");
     cover.className = "persona-cover";
-    cover.textContent = persona.name;
+    if (persona.image) {
+      cover.classList.add("has-image");
+      cover.style.backgroundImage = `url("${persona.image}")`;
+    }
+    const coverLabel = document.createElement("span");
+    coverLabel.className = "persona-cover-label";
+    coverLabel.textContent = persona.name;
+    cover.appendChild(coverLabel);
     clickableWrapper.appendChild(cover);
 
     const tags = document.createElement("div");

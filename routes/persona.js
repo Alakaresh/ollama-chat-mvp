@@ -1,5 +1,17 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const { getDb, deleteConversation } = require("../services/database");
+
+const uploadDir = path.join(__dirname, "..", "public", "uploads");
+const imageMimeExtensions = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "image/svg+xml": ".svg",
+};
 
 function personaRouter() {
   const router = express.Router();
@@ -9,7 +21,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT id, name, label, nsfw, tags, introduction, environment FROM personas"
+        "SELECT id, name, label, nsfw, tags, introduction, environment, image FROM personas"
       );
       const personas = stmt.all();
       // Parse the tags string back into an array
@@ -26,6 +38,42 @@ function personaRouter() {
       res.json(personas);
     } catch (error) {
       console.error("Failed to fetch personas:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // PUT /api/personas/:id/image
+  router.put("/personas/:id/image", express.raw({ type: ["image/*"], limit: "10mb" }), (req, res) => {
+    const personaId = req.params.id;
+    const contentType = req.headers["content-type"];
+    const extension = imageMimeExtensions[contentType];
+
+    if (!extension) {
+      return res.status(400).json({ error: "Unsupported image type" });
+    }
+
+    if (!req.body || !req.body.length) {
+      return res.status(400).json({ error: "Image file is required" });
+    }
+
+    try {
+      fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = `persona-${personaId}-${Date.now()}${extension}`;
+      const filePath = path.join(uploadDir, filename);
+      fs.writeFileSync(filePath, req.body);
+
+      const imagePath = `/uploads/${filename}`;
+      const db = getDb();
+      const stmt = db.prepare("UPDATE personas SET image = ? WHERE id = ?");
+      const result = stmt.run(imagePath, personaId);
+
+      if (result.changes === 0) {
+        return res.status(404).json({ error: "Persona not found" });
+      }
+
+      res.status(200).json({ image: imagePath });
+    } catch (error) {
+      console.error(`Failed to upload image for persona ${personaId}:`, error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -86,7 +134,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT p.id, p.name, p.label, p.nsfw, p.tags, p.introduction, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+        "SELECT p.id, p.name, p.label, p.nsfw, p.tags, p.introduction, p.environment, p.image, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
       );
       const data = stmt.get(personaId);
 
@@ -111,6 +159,7 @@ function personaRouter() {
             tags: data.tags,
             introduction: data.introduction,
             environment: data.environment,
+            image: data.image,
         },
         character: data.character,
         relationship: data.relationship,
@@ -128,7 +177,7 @@ function personaRouter() {
   router.get("/character-template", (req, res) => {
     const db = getDb();
     const blankTemplate = {
-      persona: { name: "", label: "", nsfw: false, tags: [], introduction: "", environment: "" },
+      persona: { name: "", label: "", nsfw: false, tags: [], introduction: "", environment: "", image: "" },
       character: {},
       relationship: {},
       outfit: {},
@@ -145,7 +194,7 @@ function personaRouter() {
         const personaId = meiInfo.id;
 
         const stmt = db.prepare(
-            "SELECT p.label, p.nsfw, p.tags, p.introduction, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+            "SELECT p.label, p.nsfw, p.tags, p.introduction, p.environment, p.image, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
         );
         const data = stmt.get(personaId);
 
@@ -168,6 +217,7 @@ function personaRouter() {
                 tags: data.tags,
                 introduction: data.introduction,
                 environment: data.environment,
+                image: data.image,
             },
             character: data.character || {},
             relationship: data.relationship || {},
@@ -190,7 +240,7 @@ function personaRouter() {
     try {
       if (!persona_id) {
         // Create new persona
-        const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment'];
+        const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment', 'image'];
         const fields = Object.keys(persona).filter(field => allowedFields.includes(field));
         const placeholders = fields.map(() => '?').join(', ');
         const values = fields.map(field => {
@@ -206,7 +256,7 @@ function personaRouter() {
       } else {
         // Update existing persona
         if (persona) {
-            const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment'];
+            const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment', 'image'];
             const fields = Object.keys(persona).filter(field => allowedFields.includes(field));
 
             if (fields.length > 0) {

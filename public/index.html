@@ -206,6 +206,19 @@
       padding: 12px;
       font-weight: 600;
       color: #fff;
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+    }
+
+    .persona-cover.has-image {
+      position: relative;
+    }
+
+    .persona-cover-label {
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
     }
 
     .persona-tags {
@@ -564,7 +577,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background-image: url("/assets/bg.png");
+      background-image: var(--chat-bg-image, url("/assets/bg.png"));
       background-size: 100% 100%;
       background-position: center;
       background-repeat: no-repeat;

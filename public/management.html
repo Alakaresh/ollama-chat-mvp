@@ -45,6 +45,9 @@
         <form id="uploadForm">
             <label for="personaId">Persona ID:</label>
             <input type="text" id="personaId" name="persona_id" required readonly>
+            <label for="personaImage">Persona Image:</label>
+            <input type="file" id="personaImage" name="persona_image" accept="image/*">
+            <img id="personaImagePreview" alt="Persona preview" style="display:none; max-width: 100%; border-radius: 8px; margin-bottom: 10px;">
             <label for="jsonFile">JSON File:</label>
             <input type="file" id="jsonFile" name="jsonFile" accept=".json" required>
             <button type="submit">Update</button>
