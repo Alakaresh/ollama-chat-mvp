@@ -117,8 +117,28 @@ async function loadConfig() {
   }
 }
 
-function renderChatHistory(history) {
+function appendEnvironment(text) {
+  const messageContainer = document.createElement("div");
+  messageContainer.className = "message-container environment-message";
+
+  const messageBubble = document.createElement("div");
+  messageBubble.className = "message-bubble";
+
+  const message = document.createElement("span");
+  message.className = "chat-text";
+  message.textContent = text;
+
+  messageBubble.appendChild(message);
+  messageContainer.appendChild(messageBubble);
+  chatBox.appendChild(messageContainer);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function renderChatHistory(history, persona) {
   chatBox.innerHTML = "";
+  if (persona && persona.environment) {
+    appendEnvironment(persona.environment);
+  }
   history.forEach((message) => {
     append(message.role, message.content);
   });
@@ -373,7 +393,7 @@ personaSelect.addEventListener("change", async () => {
     }
     const conversation = await response.json();
     chatHistory = conversation;
-    renderChatHistory(chatHistory);
+    renderChatHistory(chatHistory, selectedPersona);
     updateChatHeader(selectedPersona);
     // updateChatList(); // This might need adjustment as it relies on chatSessions
   } catch (error) {
@@ -648,7 +668,7 @@ if (resetModal) {
         const convResponse = await fetch(`/api/personas/${activePersonaId}/conversation`);
         const conversation = await convResponse.json();
         chatHistory = conversation;
-        renderChatHistory(chatHistory);
+        renderChatHistory(chatHistory, selectedPersona);
         updateChatHeader(selectedPersona);
       }
 

@@ -37,7 +37,13 @@ function chatRouter() {
       res.write(`data: ${JSON.stringify(payload)}\n\n`);
     };
 
-    const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
+    const finalMessages = [{ role: "system", content: systemPrompt }];
+
+    if (persona.environment) {
+      finalMessages.push({ role: "system", content: persona.environment });
+    }
+
+    finalMessages.push(...messages);
 
     sendEvent({
       type: "params",
