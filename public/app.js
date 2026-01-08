@@ -140,6 +140,15 @@ function renderChatHistory(history, persona) {
   if (persona && persona.environment) {
     appendEnvironment(persona.environment);
   }
+  if (persona?.introduction) {
+    const hasIntroduction = history.some(
+      (message) =>
+        message.role === "assistant" && message.content === persona.introduction
+    );
+    if (!hasIntroduction) {
+      append("assistant", persona.introduction);
+    }
+  }
   history.forEach((message) => {
     append(message.role, message.content);
   });
