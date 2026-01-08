@@ -1,5 +1,17 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const { getDb, deleteConversation } = require("../services/database");
+
+const uploadDir = path.join(__dirname, "..", "public", "uploads");
+const imageMimeExtensions = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "image/svg+xml": ".svg",
+};
 
 function personaRouter() {
   const router = express.Router();
@@ -26,6 +38,42 @@ function personaRouter() {
       res.json(personas);
     } catch (error) {
       console.error("Failed to fetch personas:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // PUT /api/personas/:id/image
+  router.put("/personas/:id/image", express.raw({ type: ["image/*"], limit: "10mb" }), (req, res) => {
+    const personaId = req.params.id;
+    const contentType = req.headers["content-type"];
+    const extension = imageMimeExtensions[contentType];
+
+    if (!extension) {
+      return res.status(400).json({ error: "Unsupported image type" });
+    }
+
+    if (!req.body || !req.body.length) {
+      return res.status(400).json({ error: "Image file is required" });
+    }
+
+    try {
+      fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = `persona-${personaId}-${Date.now()}${extension}`;
+      const filePath = path.join(uploadDir, filename);
+      fs.writeFileSync(filePath, req.body);
+
+      const imagePath = `/uploads/${filename}`;
+      const db = getDb();
+      const stmt = db.prepare("UPDATE personas SET image = ? WHERE id = ?");
+      const result = stmt.run(imagePath, personaId);
+
+      if (result.changes === 0) {
+        return res.status(404).json({ error: "Persona not found" });
+      }
+
+      res.status(200).json({ image: imagePath });
+    } catch (error) {
+      console.error(`Failed to upload image for persona ${personaId}:`, error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });

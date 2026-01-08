@@ -98,6 +98,22 @@ personaImageInput.addEventListener("change", () => {
     }
 });
 
+async function uploadPersonaImage(personaId, file) {
+    const response = await fetch(`/api/personas/${personaId}/image`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": file.type,
+        },
+        body: file,
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to upload persona image");
+    }
+
+    return response.json();
+}
+
 uploadForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(uploadForm);
@@ -109,13 +125,6 @@ uploadForm.addEventListener("submit", async (event) => {
         reader.onerror = () => reject(reader.error);
         reader.readAsText(file);
     });
-    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-    });
-
     try {
         const jsonText = await readFileAsText(jsonFile);
         const data = JSON.parse(jsonText);
@@ -123,10 +132,15 @@ uploadForm.addEventListener("submit", async (event) => {
         if (personaId) {
             data.persona_id = personaId;
         }
+
         if (personaImageFile && personaImageFile.size > 0) {
-            const imageDataUrl = await readFileAsDataUrl(personaImageFile);
-            data.persona = data.persona || {};
-            data.persona.image = imageDataUrl;
+            if (!personaId) {
+                alert("Veuillez d'abord sélectionner un persona pour ajouter une image.");
+                return;
+            }
+            const imageResult = await uploadPersonaImage(personaId, personaImageFile);
+            personaImagePreview.src = imageResult.image;
+            personaImagePreview.style.display = "block";
         }
 
         const response = await fetch("/api/character-data/update", {
