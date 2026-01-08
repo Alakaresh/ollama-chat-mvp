@@ -127,21 +127,61 @@ function personaRouter() {
 
   // GET /api/character-template
   router.get("/character-template", (req, res) => {
-    const template = {
-      persona: {
-        name: "",
-        label: "",
-        nsfw: false,
-        tags: [],
-        introduction: "",
-        prompt: "",
-        environment: "",
-      },
+    const db = getDb();
+    const blankTemplate = {
+      persona: { name: "", label: "", nsfw: false, tags: [], introduction: "", prompt: "", environment: "" },
       character: {},
       relationship: {},
       outfit: {},
     };
-    res.json(template);
+
+    try {
+        const meiInfo = db.prepare("SELECT id FROM personas WHERE name = ?").get("Mei");
+
+        if (!meiInfo) {
+            console.warn("Could not find 'Mei' persona for template, returning blank template.");
+            return res.json(blankTemplate);
+        }
+
+        const personaId = meiInfo.id;
+
+        const stmt = db.prepare(
+            "SELECT p.label, p.nsfw, p.tags, p.introduction, p.prompt, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+        );
+        const data = stmt.get(personaId);
+
+        if (!data) {
+            console.error("Found 'Mei' ID but failed to fetch full data, returning blank template.");
+            return res.json(blankTemplate);
+        }
+
+        // Parse JSON strings
+        if (data.character) data.character = JSON.parse(data.character);
+        if (data.relationship) data.relationship = JSON.parse(data.relationship);
+        if (data.outfit) data.outfit = JSON.parse(data.outfit);
+        if (data.tags) data.tags = JSON.parse(data.tags);
+
+        const template = {
+            persona: {
+                name: "", // Clear name for new character
+                label: data.label,
+                nsfw: data.nsfw,
+                tags: data.tags,
+                introduction: data.introduction,
+                prompt: data.prompt,
+                environment: data.environment,
+            },
+            character: data.character || {},
+            relationship: data.relationship || {},
+            outfit: data.outfit || {},
+        };
+
+        res.json(template);
+
+    } catch (error) {
+        console.error(`Failed to fetch character template from Mei:`, error);
+        res.status(500).json(blankTemplate);
+    }
   });
 
   // POST /api/character-data/update
