@@ -183,7 +183,14 @@ function renderPersonaGrid(filter = "") {
 
     const cover = document.createElement("div");
     cover.className = "persona-cover";
-    cover.textContent = persona.name;
+    if (persona.image) {
+      cover.classList.add("has-image");
+      cover.style.backgroundImage = `url("${persona.image}")`;
+    }
+    const coverLabel = document.createElement("span");
+    coverLabel.className = "persona-cover-label";
+    coverLabel.textContent = persona.name;
+    cover.appendChild(coverLabel);
     clickableWrapper.appendChild(cover);
 
     const tags = document.createElement("div");
