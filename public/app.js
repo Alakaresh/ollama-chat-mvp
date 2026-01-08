@@ -17,6 +17,7 @@ const chatPersonaName = document.getElementById("chatPersonaName");
 const backToChatsBtn = document.getElementById("backToChats");
 const navButtons = document.querySelectorAll("[data-nav-target]");
 const screens = document.querySelectorAll("[data-screen]");
+const chatScreen = document.querySelector(".screen-chat");
 const resetModal = document.getElementById("resetModal");
 const confirmResetBtn = document.getElementById("confirmResetBtn");
 const cancelResetBtn = document.getElementById("cancelResetBtn");
@@ -147,6 +148,13 @@ function renderChatHistory(history, persona) {
 function updateChatHeader(persona) {
   if (chatPersonaName) {
     chatPersonaName.textContent = persona ? persona.name : "";
+  }
+  if (chatScreen) {
+    if (persona?.image) {
+      chatScreen.style.setProperty("--chat-bg-image", `url("${persona.image}")`);
+    } else {
+      chatScreen.style.removeProperty("--chat-bg-image");
+    }
   }
 }
 
