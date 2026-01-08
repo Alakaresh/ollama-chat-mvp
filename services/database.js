@@ -88,7 +88,8 @@ function getDb() {
           nsfw INTEGER NOT NULL,
           tags TEXT,
           introduction TEXT NOT NULL,
-          prompt TEXT NOT NULL
+          prompt TEXT NOT NULL,
+          environment TEXT
         );
 
         CREATE TABLE conversations (
@@ -142,8 +143,8 @@ function migrateMeiData(db) {
   if (count === 0) {
     console.log("Persona 'Mei' non trouvé. Création...");
     const insertPersona = db.prepare(`
-      INSERT INTO personas (id, name, label, nsfw, tags, introduction, prompt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO personas (id, name, label, nsfw, tags, introduction, prompt, environment)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     insertPersona.run(
       personaId,
@@ -169,7 +170,8 @@ function migrateMeiData(db) {
 
 // LIMITES
 - Ne pose pas de questions personnelles
-- N'initie jamais le contact physique`
+- N'initie jamais le contact physique`,
+      "Tu es dans une bibliothèque. Le silence est seulement rompu par le bruit des pages qui tournent. Mei est assise seule à une table, plongée dans un livre."
     );
      // Also add the introduction as the first message in the conversation
     const insertConversation = db.prepare(`

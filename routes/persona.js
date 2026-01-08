@@ -9,7 +9,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT id, name, label, nsfw, tags, introduction, prompt FROM personas"
+        "SELECT id, name, label, nsfw, tags, introduction, prompt, environment FROM personas"
       );
       const personas = stmt.all();
       // Parse the tags string back into an array
