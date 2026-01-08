@@ -133,16 +133,6 @@ uploadForm.addEventListener("submit", async (event) => {
             data.persona_id = personaId;
         }
 
-        if (personaImageFile && personaImageFile.size > 0) {
-            if (!personaId) {
-                alert("Veuillez d'abord sélectionner un persona pour ajouter une image.");
-                return;
-            }
-            const imageResult = await uploadPersonaImage(personaId, personaImageFile);
-            personaImagePreview.src = imageResult.image;
-            personaImagePreview.style.display = "block";
-        }
-
         const response = await fetch("/api/character-data/update", {
             method: "POST",
             headers: {
@@ -154,9 +144,15 @@ uploadForm.addEventListener("submit", async (event) => {
         const result = await response.json();
 
         if (response.ok) {
+            const savedPersonaId = result.persona_id;
+            if (personaImageFile && personaImageFile.size > 0) {
+                const imageResult = await uploadPersonaImage(savedPersonaId, personaImageFile);
+                personaImagePreview.src = imageResult.image;
+                personaImagePreview.style.display = "block";
+            }
             alert("Character data updated successfully!");
             await loadPersonas();
-            personaSelect.value = result.persona_id;
+            personaSelect.value = savedPersonaId;
             personaSelect.dispatchEvent(new Event("change"));
         } else {
             alert("Failed to update character data.");
