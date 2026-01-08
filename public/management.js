@@ -1,6 +1,7 @@
 const personaSelect = document.getElementById("personaSelect");
 const jsonData = document.getElementById("jsonData");
 const downloadTemplate = document.getElementById("downloadTemplate");
+const newCharacterButton = document.getElementById("newCharacter");
 const uploadForm = document.getElementById("uploadForm");
 const personaIdInput = document.getElementById("personaId");
 
@@ -26,12 +27,28 @@ async function loadPersonas() {
 personaSelect.addEventListener("change", async () => {
     const personaId = personaSelect.value;
     personaIdInput.value = personaId;
+    if (personaId) {
+        try {
+            const response = await fetch(`/api/personas/${personaId}/full-data`);
+            const data = await response.json();
+            jsonData.value = JSON.stringify(data, null, 2);
+        } catch (error) {
+            console.error("Failed to load character data:", error);
+        }
+    } else {
+        jsonData.value = "";
+    }
+});
+
+newCharacterButton.addEventListener("click", async () => {
+    personaSelect.value = "";
+    personaIdInput.value = "";
     try {
-        const response = await fetch(`/api/personas/${personaId}/full-data`);
-        const data = await response.json();
-        jsonData.value = JSON.stringify(data, null, 2);
+        const response = await fetch("/api/character-template");
+        const template = await response.json();
+        jsonData.value = JSON.stringify(template, null, 2);
     } catch (error) {
-        console.error("Failed to load character data:", error);
+        console.error("Failed to load character template:", error);
     }
 });
 
@@ -59,7 +76,11 @@ uploadForm.addEventListener("submit", async (event) => {
     reader.onload = async () => {
         try {
             const data = JSON.parse(reader.result);
-            data.persona_id = formData.get("persona_id");
+            const personaId = formData.get("persona_id");
+            if (personaId) {
+                data.persona_id = personaId;
+            }
+
             const response = await fetch("/api/character-data/update", {
                 method: "POST",
                 headers: {
@@ -67,8 +88,13 @@ uploadForm.addEventListener("submit", async (event) => {
                 },
                 body: JSON.stringify(data),
             });
+
+            const result = await response.json();
+
             if (response.ok) {
                 alert("Character data updated successfully!");
+                await loadPersonas();
+                personaSelect.value = result.persona_id;
                 personaSelect.dispatchEvent(new Event("change"));
             } else {
                 alert("Failed to update character data.");
