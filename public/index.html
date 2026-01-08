@@ -202,7 +202,9 @@
       height: 140px;
       background: linear-gradient(135deg, #2a9bdc, #7b5cff);
       display: flex;
-      align-items: flex-end;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-end;
       padding: 12px;
       font-weight: 600;
       color: #fff;
@@ -226,6 +228,10 @@
       gap: 6px;
       flex-wrap: wrap;
       padding: 10px 12px 0;
+    }
+
+    .persona-cover-tags {
+      padding: 0;
     }
 
     .persona-tag {
@@ -252,6 +258,12 @@
     .persona-subtitle {
       font-size: 12px;
       color: #b3b3b3;
+    }
+
+    .persona-environment {
+      font-size: 12px;
+      color: #b3b3b3;
+      line-height: 1.4;
     }
 
     .chat-list {
@@ -724,7 +736,6 @@
             </label>
           </span>
         </div>
-        <p class="section-title">Personas</p>
         <div class="persona-scroll">
           <div id="personaGrid" class="persona-grid"></div>
         </div>

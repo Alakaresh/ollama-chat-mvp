@@ -204,35 +204,41 @@ function renderPersonaGrid(filter = "") {
       cover.classList.add("has-image");
       cover.style.backgroundImage = `url("${persona.image}")`;
     }
-    const coverLabel = document.createElement("span");
-    coverLabel.className = "persona-cover-label";
-    coverLabel.textContent = persona.name;
-    cover.appendChild(coverLabel);
-    clickableWrapper.appendChild(cover);
-
-    const tags = document.createElement("div");
-    tags.className = "persona-tags";
+    const coverTags = document.createElement("div");
+    coverTags.className = "persona-tags persona-cover-tags";
     (persona.tags || []).slice(0, 3).forEach((tag) => {
       const tagEl = document.createElement("span");
       tagEl.className = "persona-tag";
       tagEl.textContent = `#${tag}`;
-      tags.appendChild(tagEl);
+      coverTags.appendChild(tagEl);
     });
-    clickableWrapper.appendChild(tags);
+    cover.appendChild(coverTags);
+    clickableWrapper.appendChild(cover);
 
     const content = document.createElement("div");
     content.className = "persona-content";
 
     const title = document.createElement("p");
     title.className = "persona-title";
-    title.textContent = persona.name;
+    const rawLabel = persona.label?.trim();
+    if (rawLabel) {
+      if (rawLabel === persona.name) {
+        title.textContent = persona.name;
+      } else if (rawLabel.includes(persona.name)) {
+        title.textContent = rawLabel;
+      } else {
+        title.textContent = `${persona.name} (${rawLabel})`;
+      }
+    } else {
+      title.textContent = persona.name;
+    }
 
-    const subtitle = document.createElement("span");
-    subtitle.className = "persona-subtitle";
-    subtitle.textContent = persona.label;
+    const environment = document.createElement("span");
+    environment.className = "persona-environment";
+    environment.textContent = persona.environment || "";
 
     content.appendChild(title);
-    content.appendChild(subtitle);
+    content.appendChild(environment);
     clickableWrapper.appendChild(content);
 
     card.appendChild(clickableWrapper);
