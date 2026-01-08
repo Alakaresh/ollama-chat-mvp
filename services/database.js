@@ -37,21 +37,21 @@ function getDb() {
 
         CREATE TABLE characters (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          persona_id TEXT NOT NULL,
+          persona_id TEXT NOT NULL UNIQUE,
           data TEXT NOT NULL,
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
 
         CREATE TABLE relationships (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          persona_id TEXT NOT NULL,
+          persona_id TEXT NOT NULL UNIQUE,
           data TEXT NOT NULL,
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
 
         CREATE TABLE outfits (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          persona_id TEXT NOT NULL,
+          persona_id TEXT NOT NULL UNIQUE,
           data TEXT NOT NULL,
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
@@ -64,6 +64,15 @@ function getDb() {
         console.log("Ajout de la colonne 'environment' à la table personas...");
         db.exec("ALTER TABLE personas ADD COLUMN environment TEXT");
       }
+
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS characters_persona_id_unique
+        ON characters(persona_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS relationships_persona_id_unique
+        ON relationships(persona_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS outfits_persona_id_unique
+        ON outfits(persona_id);
+      `);
     }
   }
   return db;
