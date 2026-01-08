@@ -257,8 +257,15 @@ function personaRouter() {
         const insertFields = ['id', ...fields];
         const insertPlaceholders = insertFields.map(() => '?').join(', ');
         const stmt = db.prepare(`INSERT INTO personas (${insertFields.join(', ')}) VALUES (${insertPlaceholders})`);
-        stmt.run(newPersonaId, ...values);
-        persona_id = newPersonaId;
+        try {
+          stmt.run(newPersonaId, ...values);
+          persona_id = newPersonaId;
+        } catch (error) {
+          if (error?.message?.includes("UNIQUE constraint failed: personas.id")) {
+            return res.status(409).json({ error: "Persona id already exists." });
+          }
+          throw error;
+        }
       } else {
         // Update existing persona
         if (persona) {

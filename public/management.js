@@ -133,15 +133,26 @@ uploadForm.addEventListener("submit", async (event) => {
             data.persona_id = personaId;
         }
 
-        const response = await fetch("/api/character-data/update", {
+        const submitCharacterData = async (payload) => fetch("/api/character-data/update", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
+        let response = await submitCharacterData(data);
+        let result = await response.json();
+
+        if (response.status === 409) {
+            const shouldReplace = confirm("Un persona avec ce nom existe déjà. Voulez-vous le remplacer ?");
+            if (!shouldReplace) {
+                return;
+            }
+            data.persona_id = data.persona?.name;
+            response = await submitCharacterData(data);
+            result = await response.json();
+        }
 
         if (response.ok) {
             const savedPersonaId = result.persona_id;
@@ -155,7 +166,7 @@ uploadForm.addEventListener("submit", async (event) => {
             personaSelect.value = savedPersonaId;
             personaSelect.dispatchEvent(new Event("change"));
         } else {
-            alert("Failed to update character data.");
+            alert(result?.error || "Failed to update character data.");
         }
     } catch (error) {
         console.error("Failed to update character data:", error);
