@@ -58,6 +58,11 @@ function personaRouter() {
              ORDER BY timestamp DESC, id DESC
              LIMIT 1
            )
+         WHERE EXISTS (
+           SELECT 1
+           FROM conversations
+           WHERE persona_id = p.id AND role = 'user'
+         )
          ORDER BY c.timestamp DESC, c.id DESC`
       );
       const chats = stmt.all();
