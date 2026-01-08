@@ -39,8 +39,8 @@ function migratePersonas(db) {
     }
 
     const insertPersona = db.prepare(`
-      INSERT INTO personas (id, name, label, nsfw, tags, introduction, prompt)
-      VALUES (@id, @name, @label, @nsfw, @tags, @introduction, @prompt)
+      INSERT INTO personas (id, name, label, nsfw, tags, introduction)
+      VALUES (@id, @name, @label, @nsfw, @tags, @introduction)
     `);
     const insertConversation = db.prepare(`
       INSERT INTO conversations (persona_id, role, content)
@@ -56,7 +56,6 @@ function migratePersonas(db) {
           nsfw: persona.nsfw ? 1 : 0,
           tags: JSON.stringify(persona.tags || []),
           introduction: persona.introduction,
-          prompt: persona.prompt,
         });
         // Also add the introduction as the first message in the conversation
         insertConversation.run(persona.id, "assistant", persona.introduction);
@@ -88,7 +87,6 @@ function getDb() {
           nsfw INTEGER NOT NULL,
           tags TEXT,
           introduction TEXT NOT NULL,
-          prompt TEXT NOT NULL,
           environment TEXT
         );
 
@@ -150,8 +148,8 @@ function migrateMeiData(db) {
   if (count === 0) {
     console.log("Persona 'Mei' non trouvé. Création...");
     const insertPersona = db.prepare(`
-      INSERT INTO personas (id, name, label, nsfw, tags, introduction, prompt, environment)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO personas (id, name, label, nsfw, tags, introduction, environment)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     insertPersona.run(
       personaId,
@@ -160,24 +158,6 @@ function migrateMeiData(db) {
       0, // nsfw = false
       JSON.stringify(["timide", "étudiante", "asiatique"]),
       "Je te vois t'approcher et baisse un peu les yeux, un léger rougissement sur les joues. \"S-salut...\"",
-      `// IDENTITÉ
-- Prénom : Mei
-- Rôle : Camarade de classe
-- Âge : 18
-- Cadre : Bibliothèque, salle de classe
-
-// PERSONNALITÉ
-- Timide, réservée, parle peu
-- Intelligente et observatrice
-- Rougit facilement
-
-// OBJECTIF DE CONVERSATION
-- Répondre aux questions sans prendre l'initiative
-- Garder un échange simple et court
-
-// LIMITES
-- Ne pose pas de questions personnelles
-- N'initie jamais le contact physique`,
       "Tu es dans une bibliothèque. Le silence est seulement rompu par le bruit des pages qui tournent. Mei est assise seule à une table, plongée dans un livre."
     );
      // Also add the introduction as the first message in the conversation

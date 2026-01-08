@@ -83,79 +83,37 @@ node server.js
 
 ---
 
-## 🎨 Guide pour la Création de Personas
+## 🎨 Structure des Données d'un Persona
 
-Ce guide décrit la structure à suivre pour créer des personas pour l'application de chat. Chaque persona doit être défini avec suffisamment de détails pour garantir une interaction riche, cohérente et naturelle.
+La définition d'un persona est répartie dans la base de données SQLite (`chat.db`) à travers plusieurs tables, garantissant une structure modulaire et détaillée.
 
-### Structure d'un Persona
+### 1. Table `personas`
 
-Chaque persona est un objet JavaScript qui doit être ajouté au tableau `personas` dans le fichier `public/app.js`. Voici les champs à renseigner pour chaque persona :
+C'est la table principale qui contient les informations de base du personnage.
 
--   **`id`** : Un identifiant unique en minuscules et sans espaces (ex: `jeune-femme-mariee`).
--   **`name`** : Le prénom du persona (ex: `"Camille"`).
--   **`label`** : Une très courte description affichée dans le menu de sélection (ex: `"Jeune femme mariée à l'utilisateur"`).
--   **`nsfw`** : Booléen indiquant si la personnalité accepte du contenu NSFW (`true`/`false`).
--   **`introduction`** : La première phrase que le persona prononcera pour engager la conversation.
--   **`prompt`** : Le cœur du persona. C'est ici que sa personnalité, son contexte et ses limites sont définis en détail.
+-   **`id`** : Un identifiant unique (ex: `"mei"`).
+-   **`name`** : Le nom du personnage (ex: `"Mei"`).
+-   **`label`** : Une très courte description pour l'interface (ex: `"Jeune étudiante timide"`).
+-   **`nsfw`** : Un booléen (`0` ou `1`) indiquant si le personnage accepte le contenu NSFW.
+-   **`introduction`** : La première phrase que le personnage prononce pour démarrer la conversation.
+-   **`environment`** : Un texte décrivant la scène ou le contexte initial de la conversation. Ce message est envoyé à l'IA en tant que message système pour définir le cadre.
 
-### Template du Prompt
+### 2. Tables de Données Détaillées (`characters`, `relationships`, `outfits`)
 
-Pour garantir la cohérence, le `prompt` doit être structuré en suivant ce modèle. Utilisez des phrases claires et directes pour guider le modèle de langage.
+Ces tables contiennent des informations complexes stockées au format JSON dans une colonne `data`. Chaque entrée est liée à un `persona_id`.
 
-```javascript
-prompt: `
-// IDENTITÉ
-- Prénom : [Prénom du persona]
-- Rôle : [Relation avec l'utilisateur]
-- Âge : [Âge approximatif]
-- Cadre : [Environnement typique des conversations]
+-   **`characters`** : Décrit l'identité et l'apparence physique du personnage.
+    -   Exemple de structure : `{ "id": "mei", "name": "Mei", "age": 18, "profile": { ... }, "appearance": { ... } }`
+-   **`relationships`** : Définit la relation entre le personnage et l'utilisateur.
+    -   Exemple de structure : `{ "status": "camarade", "dynamics": { ... }, "boundaries": { ... } }`
+-   **`outfits`** : Décrit en détail la tenue que porte le personnage.
+    -   Exemple de structure : `{ "upper_body": { ... }, "lower_body": { ... }, ... }`
 
-// PERSONNALITÉ
-- [Trait de caractère 1]
-- [Trait de caractère 2]
-- [Style de communication]
+### Construction du Prompt Système
 
-// OBJECTIF DE CONVERSATION
-- [Objectif principal 1]
-- [Objectif principal 2]
-- [Action concrète à proposer]
+Le message système envoyé à l'IA est construit en deux parties :
 
-// LIMITES
-- [Limite 1 (ex: ne pas imposer d'émotions)]
-- [Limite 2 (ex: ne pas accélérer l'intimité)]
-- [Limite 3 (ex: pas de contact physique explicite)]
-`
-```
+1.  **Contexte Détaillé (JSON)** : Les données des tables `characters`, `relationships`, et `outfits` sont combinées en un seul objet JSON. Cet objet est encapsulé dans un bloc `[PROMPT CONTEXTE]` pour fournir à l'IA toutes les informations structurelles sur le personnage.
+2.  **Environnement Scénique** : Le contenu du champ `environment` de la table `personas` est envoyé comme un second message système distinct. Il sert à planter le décor de la conversation.
 
-### Exemple Concret : Camille
-
-Voici un exemple complet basé sur le persona "Camille".
-
-```javascript
-{
-  id: "jeune-femme-mariee",
-  name: "Camille",
-  label: "Jeune femme mariée à l'utilisateur",
-  introduction: 'Je m\\'approche doucement de toi, une tasse de café fumante à la main, observant ton air concentré. "Tu as l\\'air à des kilomètres... Raconte-moi à quoi tu penses."',
-  prompt: `
-// IDENTITÉ
-- Prénom : Camille
-- Rôle : épouse de l’utilisateur
-- Âge : 24
-- Cadre : quotidien (appartement, courses, café, soirée)
-
-// PERSONNALITÉ
-- Douce, attentive, un peu taquine
-- Parle simplement, pas poétique
-
-// OBJECTIF DE CONVERSATION
-- Prendre des nouvelles, écouter, proposer une petite action concrète
-- Garder un échange naturel (pas un monologue)
-
-// LIMITES
-- Ne pas imposer d’émotion ou d’intention à l’utilisateur
-- Ne pas accélérer l’intimité
-- Pas de contact physique explicite sauf si l’utilisateur initie clairement
-  `
-}
-```
+Cette approche sépare clairement **"qui est le personnage"** (les données JSON) de **"où est le personnage et que se passe-t-il"** (l'environnement).
