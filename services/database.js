@@ -66,6 +66,13 @@ function getDb() {
       }
 
       db.exec(`
+        DELETE FROM characters
+        WHERE id NOT IN (SELECT MAX(id) FROM characters GROUP BY persona_id);
+        DELETE FROM relationships
+        WHERE id NOT IN (SELECT MAX(id) FROM relationships GROUP BY persona_id);
+        DELETE FROM outfits
+        WHERE id NOT IN (SELECT MAX(id) FROM outfits GROUP BY persona_id);
+
         CREATE UNIQUE INDEX IF NOT EXISTS characters_persona_id_unique
         ON characters(persona_id);
         CREATE UNIQUE INDEX IF NOT EXISTS relationships_persona_id_unique
