@@ -23,7 +23,8 @@ function getDb() {
           nsfw INTEGER NOT NULL,
           tags TEXT,
           introduction TEXT NOT NULL,
-          environment TEXT
+          environment TEXT,
+          image TEXT
         );
 
         CREATE TABLE conversations (
@@ -63,6 +64,11 @@ function getDb() {
       if (!hasEnvironment) {
         console.log("Ajout de la colonne 'environment' à la table personas...");
         db.exec("ALTER TABLE personas ADD COLUMN environment TEXT");
+      }
+      const hasImage = columns.some((column) => column.name === "image");
+      if (!hasImage) {
+        console.log("Ajout de la colonne 'image' à la table personas...");
+        db.exec("ALTER TABLE personas ADD COLUMN image TEXT");
       }
 
       db.exec(`
