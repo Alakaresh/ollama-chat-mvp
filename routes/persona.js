@@ -9,7 +9,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT id, name, label, nsfw, tags, introduction, prompt, environment FROM personas"
+        "SELECT id, name, label, nsfw, tags, introduction, environment FROM personas"
       );
       const personas = stmt.all();
       // Parse the tags string back into an array
@@ -86,7 +86,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT p.id, p.name, p.label, p.nsfw, p.tags, p.introduction, p.prompt, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+        "SELECT p.id, p.name, p.label, p.nsfw, p.tags, p.introduction, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
       );
       const data = stmt.get(personaId);
 
@@ -110,7 +110,6 @@ function personaRouter() {
             nsfw: data.nsfw,
             tags: data.tags,
             introduction: data.introduction,
-            prompt: data.prompt,
             environment: data.environment,
         },
         character: data.character,
@@ -129,7 +128,7 @@ function personaRouter() {
   router.get("/character-template", (req, res) => {
     const db = getDb();
     const blankTemplate = {
-      persona: { name: "", label: "", nsfw: false, tags: [], introduction: "", prompt: "", environment: "" },
+      persona: { name: "", label: "", nsfw: false, tags: [], introduction: "", environment: "" },
       character: {},
       relationship: {},
       outfit: {},
@@ -146,7 +145,7 @@ function personaRouter() {
         const personaId = meiInfo.id;
 
         const stmt = db.prepare(
-            "SELECT p.label, p.nsfw, p.tags, p.introduction, p.prompt, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+            "SELECT p.label, p.nsfw, p.tags, p.introduction, p.environment, c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
         );
         const data = stmt.get(personaId);
 
@@ -168,7 +167,6 @@ function personaRouter() {
                 nsfw: data.nsfw,
                 tags: data.tags,
                 introduction: data.introduction,
-                prompt: data.prompt,
                 environment: data.environment,
             },
             character: data.character || {},
@@ -192,7 +190,7 @@ function personaRouter() {
     try {
       if (!persona_id) {
         // Create new persona
-        const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'prompt', 'environment'];
+        const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment'];
         const fields = Object.keys(persona).filter(field => allowedFields.includes(field));
         const placeholders = fields.map(() => '?').join(', ');
         const values = fields.map(field => {
@@ -208,7 +206,7 @@ function personaRouter() {
       } else {
         // Update existing persona
         if (persona) {
-            const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'prompt', 'environment'];
+            const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment'];
             const fields = Object.keys(persona).filter(field => allowedFields.includes(field));
 
             if (fields.length > 0) {
