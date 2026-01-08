@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Management</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #141414;
+            color: #f2f2f2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        select, textarea, button, input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background-color: #262626;
+            color: #f2f2f2;
+        }
+        textarea {
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Character Management</h1>
+        <label for="personaSelect">Select Persona:</label>
+        <select id="personaSelect"></select>
+
+        <label for="jsonData">Character Data (JSON):</label>
+        <textarea id="jsonData" readonly></textarea>
+
+        <button id="downloadTemplate">Download Template</button>
+
+        <h2>Update from File</h2>
+        <form id="uploadForm">
+            <label for="personaId">Persona ID:</label>
+            <input type="text" id="personaId" name="persona_id" required>
+            <label for="jsonFile">JSON File:</label>
+            <input type="file" id="jsonFile" name="jsonFile" accept=".json" required>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+    <script src="management.js"></script>
+</body>
+</html>

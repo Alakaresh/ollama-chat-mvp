@@ -80,6 +80,78 @@ function personaRouter() {
     }
   });
 
+  // GET /api/personas/:id/full-data
+  router.get("/personas/:id/full-data", (req, res) => {
+    const personaId = req.params.id;
+    const db = getDb();
+    try {
+      const stmt = db.prepare(
+        "SELECT c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
+      );
+      const data = stmt.get(personaId);
+
+      // Parse the JSON strings before sending the response
+      if (data) {
+        if (data.character) data.character = JSON.parse(data.character);
+        if (data.relationship) data.relationship = JSON.parse(data.relationship);
+        if (data.outfit) data.outfit = JSON.parse(data.outfit);
+      }
+
+      res.json(data);
+    } catch (error) {
+      console.error(`Failed to fetch full data for persona ${personaId}:`, error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // GET /api/character-template
+  router.get("/character-template", (req, res) => {
+    const template = {
+      character: {},
+      relationship: {},
+      outfit: {},
+    };
+    res.json(template);
+  });
+
+  // POST /api/character-data/update
+  router.post("/character-data/update", (req, res) => {
+    const { persona_id, character, relationship, outfit } = req.body;
+
+    if (!persona_id) {
+      return res.status(400).json({ error: "persona_id is required" });
+    }
+
+    const db = getDb();
+    const transaction = db.transaction(() => {
+      try {
+        if (character) {
+          const stmt = db.prepare(
+            "INSERT OR REPLACE INTO characters (persona_id, data) VALUES (?, ?)"
+          );
+          stmt.run(persona_id, JSON.stringify(character));
+        }
+        if (relationship) {
+          const stmt = db.prepare(
+            "INSERT OR REPLACE INTO relationships (persona_id, data) VALUES (?, ?)"
+          );
+          stmt.run(persona_id, JSON.stringify(relationship));
+        }
+        if (outfit) {
+          const stmt = db.prepare(
+            "INSERT OR REPLACE INTO outfits (persona_id, data) VALUES (?, ?)"
+          );
+          stmt.run(persona_id, JSON.stringify(outfit));
+        }
+        res.status(200).json({ success: true });
+      } catch (error) {
+        console.error(`Failed to update character data for persona ${persona_id}:`, error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+    transaction();
+  });
+
   return router;
 }
 

@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const { getDb } = require("./services/database");
 
 const { modelsRouter } = require("./routes/models");
@@ -22,7 +23,12 @@ function isCloudflareRequest(req) {
   );
 }
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
+
+app.get("/management", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "management.html"));
+});
 
 app.get("/api/config", (req, res) => {
   const isCloudflare = isCloudflareRequest(req);
