@@ -37,6 +37,54 @@ let exitAttemptTimer = null;
 
 let personas = [];
 
+function setupBottomCtaClone() {
+  const targetButton = Array.from(document.querySelectorAll("button")).find(
+    (button) =>
+      button.textContent.trim().toLowerCase() === "personnaliser le design"
+  );
+  if (!targetButton) return;
+
+  const cloneWrapper = document.createElement("div");
+  cloneWrapper.className = "bottom-cta-clone";
+
+  const cloneButton = targetButton.cloneNode(true);
+  cloneButton.removeAttribute("id");
+  cloneButton.setAttribute("aria-hidden", "false");
+  cloneWrapper.appendChild(cloneButton);
+  document.body.appendChild(cloneWrapper);
+
+  const syncCloneState = () => {
+    cloneButton.disabled = targetButton.disabled;
+    cloneButton.classList.toggle("is-disabled", targetButton.disabled);
+  };
+  syncCloneState();
+
+  cloneButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    targetButton.click();
+  });
+
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        cloneWrapper.classList.toggle("is-visible", !entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(targetButton);
+  } else {
+    cloneWrapper.classList.add("is-visible");
+  }
+
+  if ("MutationObserver" in window) {
+    const mutationObserver = new MutationObserver(syncCloneState);
+    mutationObserver.observe(targetButton, {
+      attributes: true,
+      attributeFilter: ["disabled", "class"]
+    });
+  }
+}
+
 function setActiveScreen(screen, { skipHistory = false, replaceHistory = false } = {}) {
   screens.forEach((el) => {
     el.classList.toggle("is-active", el.dataset.screen === screen);
@@ -705,6 +753,8 @@ navButtons.forEach((button) => {
     }
   });
 });
+
+setupBottomCtaClone();
 
 if (resetModal) {
   cancelResetBtn.addEventListener("click", () => {

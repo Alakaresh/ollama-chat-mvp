@@ -349,6 +349,26 @@
       color: #a7e8ff;
     }
 
+    .bottom-cta-clone {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 20px 24px;
+      display: flex;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(20, 20, 20, 0) 0%, rgba(20, 20, 20, 0.72) 35%, #141414 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 10;
+    }
+
+    .bottom-cta-clone.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     .model-row {
       display: flex;
       flex-direction: column;
