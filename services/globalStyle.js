@@ -39,23 +39,19 @@ INTERDIT ABSOLU :
 `.trim();
 
 
-function buildSystemPrompt(persona, personaName, personaNsfw = false) {
-  const nsfwLine = personaNsfw
-    ? "Le ton peut être NSFW si l’utilisateur le souhaite."
-    : "";
-  const basePrompt = [GLOBAL_SYSTEM_PROMPT, nsfwLine].filter(Boolean).join("\n");
+function buildSystemPrompt(persona, personaNsfw = false) {
+  const sections = [GLOBAL_SYSTEM_PROMPT];
 
-  if (!persona) return basePrompt;
+  if (personaNsfw) {
+    sections.push(`
+SECTION NSFW :
+- Le ton peut être explicite, sensuel ou sexuel uniquement si l’utilisateur initie clairement ce registre.
+- Aucune escalade automatique.
+- Respect strict du cadre narratif et du personnage incarné.
+    `.trim());
+  }
 
-  return `
-${basePrompt}
-
-PERSONNAGE INCARNÉ :
-- Prénom : ${personaName || "Inconnu"}
-
-PROFIL DU PERSONNAGE :
-${persona}
-  `.trim();
+  return sections.join("\n\n");
 }
 
 
