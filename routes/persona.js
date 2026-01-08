@@ -241,6 +241,10 @@ function personaRouter() {
       if (!persona_id) {
         // Create new persona
         const allowedFields = ['name', 'label', 'nsfw', 'tags', 'introduction', 'environment', 'image'];
+        const newPersonaId = persona?.name?.trim();
+        if (!newPersonaId) {
+          return res.status(400).json({ error: "Persona name is required to create an id." });
+        }
         const fields = Object.keys(persona).filter(field => allowedFields.includes(field));
         const placeholders = fields.map(() => '?').join(', ');
         const values = fields.map(field => {
@@ -250,9 +254,18 @@ function personaRouter() {
             return persona[field];
         });
 
-        const stmt = db.prepare(`INSERT INTO personas (${fields.join(', ')}) VALUES (${placeholders})`);
-        const result = stmt.run(...values);
-        persona_id = result.lastInsertRowid;
+        const insertFields = ['id', ...fields];
+        const insertPlaceholders = insertFields.map(() => '?').join(', ');
+        const stmt = db.prepare(`INSERT INTO personas (${insertFields.join(', ')}) VALUES (${insertPlaceholders})`);
+        try {
+          stmt.run(newPersonaId, ...values);
+          persona_id = newPersonaId;
+        } catch (error) {
+          if (error?.message?.includes("UNIQUE constraint failed: personas.id")) {
+            return res.status(409).json({ error: "Persona id already exists." });
+          }
+          throw error;
+        }
       } else {
         // Update existing persona
         if (persona) {
