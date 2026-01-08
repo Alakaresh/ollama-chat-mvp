@@ -13,7 +13,7 @@ function generateDetailedPrompt(persona) {
   const personaId = persona.id;
 
   try {
-    const charStmt = db.prepare("SELECT data FROM characters WHERE persona_id = ?");
+    const charStmt = db.prepare("SELECT data FROM characters WHERE persona_id = ? LIMIT 1");
     const characterRow = charStmt.get(personaId);
 
     // If no character data, assume no detailed data exists and return empty.
@@ -21,10 +21,10 @@ function generateDetailedPrompt(persona) {
       return "";
     }
 
-    const relStmt = db.prepare("SELECT data FROM relationships WHERE persona_id = ?");
+    const relStmt = db.prepare("SELECT data FROM relationships WHERE persona_id = ? LIMIT 1");
     const relationshipRow = relStmt.get(personaId);
 
-    const outfitStmt = db.prepare("SELECT data FROM outfits WHERE persona_id = ?");
+    const outfitStmt = db.prepare("SELECT data FROM outfits WHERE persona_id = ? LIMIT 1");
     const outfitRow = outfitStmt.get(personaId);
 
     const character = JSON.parse(characterRow.data);
