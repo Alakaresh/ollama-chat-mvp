@@ -523,23 +523,6 @@ async function sendMessage() {
     clearTypingIndicator();
     chatHistory.push({ role: "assistant", content: fullAssistantResponse });
 
-    // Save user and assistant messages to DB
-    try {
-      await fetch(`/api/personas/${selectedId}/conversation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'user', content: userMessage })
-      });
-      await fetch(`/api/personas/${selectedId}/conversation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'assistant', content: fullAssistantResponse })
-      });
-    } catch (dbError) {
-      console.error("Failed to save conversation:", dbError);
-      append("error", "Failed to save message.");
-    }
-
     // updateChatList(); // Needs rework
   } catch (e) {
     clearTypingIndicator();
