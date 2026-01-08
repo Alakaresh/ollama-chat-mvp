@@ -59,7 +59,33 @@ function getDb() {
       `);
       console.log("Schéma créé.");
     } else {
-      const columns = db.prepare("PRAGMA table_info(personas)").all();
+      let columns = db.prepare("PRAGMA table_info(personas)").all();
+      const hasPrompt = columns.some((column) => column.name === "prompt");
+      if (hasPrompt) {
+        console.log("Suppression de la colonne 'prompt' de la table personas...");
+        db.exec("PRAGMA foreign_keys = OFF;");
+        db.exec(`
+          CREATE TABLE personas_new (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            label TEXT NOT NULL,
+            nsfw INTEGER NOT NULL,
+            tags TEXT,
+            introduction TEXT NOT NULL,
+            environment TEXT,
+            image TEXT
+          );
+
+          INSERT INTO personas_new (id, name, label, nsfw, tags, introduction, environment, image)
+          SELECT id, name, label, nsfw, tags, introduction, environment, image
+          FROM personas;
+
+          DROP TABLE personas;
+          ALTER TABLE personas_new RENAME TO personas;
+        `);
+        db.exec("PRAGMA foreign_keys = ON;");
+        columns = db.prepare("PRAGMA table_info(personas)").all();
+      }
       const hasEnvironment = columns.some((column) => column.name === "environment");
       if (!hasEnvironment) {
         console.log("Ajout de la colonne 'environment' à la table personas...");
