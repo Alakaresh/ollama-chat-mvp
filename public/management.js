@@ -4,6 +4,8 @@ const downloadTemplate = document.getElementById("downloadTemplate");
 const newCharacterButton = document.getElementById("newCharacter");
 const uploadForm = document.getElementById("uploadForm");
 const personaIdInput = document.getElementById("personaId");
+const personaImageInput = document.getElementById("personaImage");
+const personaImagePreview = document.getElementById("personaImagePreview");
 
 let personas = [];
 
@@ -32,17 +34,30 @@ personaSelect.addEventListener("change", async () => {
             const response = await fetch(`/api/personas/${personaId}/full-data`);
             const data = await response.json();
             jsonData.value = JSON.stringify(data, null, 2);
+            if (data.persona?.image) {
+                personaImagePreview.src = data.persona.image;
+                personaImagePreview.style.display = "block";
+            } else {
+                personaImagePreview.src = "";
+                personaImagePreview.style.display = "none";
+            }
         } catch (error) {
             console.error("Failed to load character data:", error);
         }
     } else {
         jsonData.value = "";
+        personaImageInput.value = "";
+        personaImagePreview.src = "";
+        personaImagePreview.style.display = "none";
     }
 });
 
 newCharacterButton.addEventListener("click", async () => {
     personaSelect.value = "";
     personaIdInput.value = "";
+    personaImageInput.value = "";
+    personaImagePreview.src = "";
+    personaImagePreview.style.display = "none";
     try {
         const response = await fetch("/api/character-template");
         const template = await response.json();
@@ -68,43 +83,74 @@ downloadTemplate.addEventListener("click", async () => {
     }
 });
 
+personaImageInput.addEventListener("change", () => {
+    const file = personaImageInput.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            personaImagePreview.src = reader.result;
+            personaImagePreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+    } else {
+        personaImagePreview.src = "";
+        personaImagePreview.style.display = "none";
+    }
+});
+
 uploadForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(uploadForm);
     const jsonFile = formData.get("jsonFile");
-    const reader = new FileReader();
-    reader.onload = async () => {
-        try {
-            const data = JSON.parse(reader.result);
-            const personaId = formData.get("persona_id");
-            if (personaId) {
-                data.persona_id = personaId;
-            }
+    const personaImageFile = formData.get("persona_image");
+    const readFileAsText = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+    });
+    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
 
-            const response = await fetch("/api/character-data/update", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-            });
+    try {
+        const jsonText = await readFileAsText(jsonFile);
+        const data = JSON.parse(jsonText);
+        const personaId = formData.get("persona_id");
+        if (personaId) {
+            data.persona_id = personaId;
+        }
+        if (personaImageFile && personaImageFile.size > 0) {
+            const imageDataUrl = await readFileAsDataUrl(personaImageFile);
+            data.persona = data.persona || {};
+            data.persona.image = imageDataUrl;
+        }
 
-            const result = await response.json();
+        const response = await fetch("/api/character-data/update", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
 
-            if (response.ok) {
-                alert("Character data updated successfully!");
-                await loadPersonas();
-                personaSelect.value = result.persona_id;
-                personaSelect.dispatchEvent(new Event("change"));
-            } else {
-                alert("Failed to update character data.");
-            }
-        } catch (error) {
-            console.error("Failed to update character data:", error);
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Character data updated successfully!");
+            await loadPersonas();
+            personaSelect.value = result.persona_id;
+            personaSelect.dispatchEvent(new Event("change"));
+        } else {
             alert("Failed to update character data.");
         }
-    };
-    reader.readAsText(jsonFile);
+    } catch (error) {
+        console.error("Failed to update character data:", error);
+        alert("Failed to update character data.");
+    }
 });
 
 loadPersonas();
