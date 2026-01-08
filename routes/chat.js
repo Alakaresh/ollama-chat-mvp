@@ -1,6 +1,6 @@
 const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
-const { sanitizeAssistantText } = require("../services/globalStyle");
+const { buildSystemPrompt, sanitizeAssistantText } = require("../services/globalStyle");
 const { generateDetailedPrompt } = require("../services/promptBuilder");
 
 function chatRouter() {
@@ -26,7 +26,15 @@ function chatRouter() {
       repeat_penalty: 1.15,
       num_ctx: 8192,
     };
-    const systemPrompt = generateDetailedPrompt(persona);
+    const baseSystemPrompt = buildSystemPrompt(
+      persona.introduction,
+      persona.name,
+      persona.nsfw
+    );
+    const detailedPrompt = generateDetailedPrompt(persona);
+    const systemPrompt = [baseSystemPrompt, detailedPrompt]
+      .filter(Boolean)
+      .join("\n\n");
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
