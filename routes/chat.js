@@ -1,6 +1,5 @@
 const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
-const { getDb } = require("../services/database");
 const { buildSystemPrompt, sanitizeAssistantText } = require("../services/globalStyle");
 const { generateDetailedPrompt } = require("../services/promptBuilder");
 
@@ -9,17 +8,12 @@ function chatRouter() {
 
   // POST /api/chat/stream { model, messages }
   router.post("/chat/stream", async (req, res) => {
-    const { model, messages, persona, personaId: bodyPersonaId } = req.body;
-    const personaId = persona?.id ?? bodyPersonaId;
+    const { model, messages, persona } = req.body;
 
     if (!model || !messages || !persona) {
       return res
         .status(400)
         .json({ error: "model, messages, et persona requis" });
-    }
-
-    if (!personaId) {
-      return res.status(400).json({ error: "persona.id requis" });
     }
 
     let temperature = 1.0;
@@ -47,13 +41,7 @@ function chatRouter() {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders?.();
 
-    let clientClosed = false;
-    req.on("close", () => {
-      clientClosed = true;
-    });
-
     const sendEvent = (payload) => {
-      if (clientClosed) return;
       res.write(`data: ${JSON.stringify(payload)}\n\n`);
     };
 
@@ -71,7 +59,6 @@ function chatRouter() {
     });
 
     let full = "";
-    const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
 
     try {
       await ollamaChatStream({
@@ -84,30 +71,12 @@ function chatRouter() {
         },
       });
 
-      const sanitizedFull = sanitizeAssistantText(full);
-      full = sanitizedFull || full;
+      sanitizeAssistantText(full);
       sendEvent({ type: "done" });
-
-      try {
-        const db = getDb();
-        const stmt = db.prepare(
-          "INSERT INTO conversations (persona_id, role, content) VALUES (?, ?, ?)"
-        );
-        if (lastUserMessage?.content) {
-          stmt.run(personaId, "user", lastUserMessage.content);
-        }
-        if (full) {
-          stmt.run(personaId, "assistant", full);
-        }
-      } catch (dbError) {
-        console.error(`Failed to save conversation for persona ${personaId}:`, dbError);
-      }
     } catch (e) {
       sendEvent({ type: "error", error: e.message });
     } finally {
-      if (!clientClosed) {
-        res.end();
-      }
+      res.end();
     }
   });
 
