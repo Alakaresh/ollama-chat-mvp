@@ -559,7 +559,7 @@ async function sendMessage() {
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
 
-    while (true) {
+    readLoop: while (true) {
       const { value, done } = await reader.read();
       if (done) break;
 
@@ -589,6 +589,8 @@ async function sendMessage() {
           logResponseEl.textContent = rawResponse;
           setQuotedContent(assistantTextNode, fullAssistantResponse);
           chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (event.type === "done") {
+          break readLoop;
         } else if (event.type === "error") {
           clearTypingIndicator();
           cleanupEmptyAssistantMessage();
