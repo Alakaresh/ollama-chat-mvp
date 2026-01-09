@@ -493,6 +493,21 @@ personaSelect.addEventListener("change", async () => {
   }
 });
 
+async function saveMessage(personaId, role, content) {
+  try {
+    const response = await fetch(`/api/personas/${personaId}/conversation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, content }),
+    });
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Failed to save message:", error);
+  }
+}
+
 async function sendMessage() {
   const userMessage = msgInput.value.trim();
   if (!userMessage) return;
@@ -505,6 +520,7 @@ async function sendMessage() {
 
   append("user", userMessage);
   chatHistory.push({ role: "user", content: userMessage });
+  await saveMessage(selectedId, "user", userMessage);
 
   const { message: assistantTextNode, typingIndicator, messageContainer } = appendStreamingAssistantWithIndicator();
   let activeTypingIndicator = typingIndicator;
@@ -598,7 +614,10 @@ async function sendMessage() {
       }
     }
     clearTypingIndicator();
-    chatHistory.push({ role: "assistant", content: fullAssistantResponse });
+    if (fullAssistantResponse) {
+      chatHistory.push({ role: "assistant", content: fullAssistantResponse });
+      await saveMessage(selectedId, "assistant", fullAssistantResponse);
+    }
 
     updateChatList();
   } catch (e) {
