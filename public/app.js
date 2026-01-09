@@ -3,6 +3,7 @@ const personaSelect = document.getElementById("personaSelect");
 const chatBox = document.getElementById("chatBox");
 const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
+const quoteBtn = document.getElementById("quoteBtn");
 const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
 const appModeToggle = document.getElementById("appModeToggle");
@@ -612,6 +613,18 @@ async function sendMessage() {
 }
 
 sendBtn.addEventListener("click", sendMessage);
+
+quoteBtn.addEventListener("click", () => {
+  const { value, selectionStart, selectionEnd } = msgInput;
+  const textBefore = value.substring(0, selectionStart);
+  const textAfter = value.substring(selectionEnd, value.length);
+
+  msgInput.value = `${textBefore}""${textAfter}`;
+
+  const newCursorPosition = selectionStart + 1;
+  msgInput.focus();
+  msgInput.setSelectionRange(newCursorPosition, newCursorPosition);
+});
 
 const formatLogJson = (payload) => {
   if (!payload) return "";
