@@ -58,6 +58,24 @@ function getDb() {
         );
       `);
       console.log("Schéma créé.");
+
+      console.log("Insertion des données de test (seed)...");
+      const stmt = db.prepare(
+        `INSERT INTO personas (id, name, label, nsfw, tags, introduction, environment, image)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      stmt.run(
+        'Lina',
+        'Lina',
+        'Lina (voisine)',
+        1,
+        JSON.stringify(['voisine', 'séduisante', 'provocante', 'adulte']),
+        'Lina entrouvre la porte de son appartement, appuyée contre l’encadrement. Un sourire en coin se dessine sur ses lèvres. "Oh… c’est toi. Tu tombes bien."',
+        'La scène se déroule dans un immeuble résidentiel en début de soirée. Le couloir est calme, éclairé par une lumière chaude. On entend au loin le bruit feutré de la ville. Lina se tient à la porte de son appartement, visiblement détendue, comme si elle attendait une interaction.',
+        '/uploads/persona-Lina-1767891711768.png'
+      );
+      console.log("Données de test insérées.");
+
     } else {
       let columns = db.prepare("PRAGMA table_info(personas)").all();
       const hasPrompt = columns.some((column) => column.name === "prompt");

@@ -1,91 +1,105 @@
-import subprocess
+
 import time
-import datetime
+import subprocess
+import sys
 from playwright.sync_api import sync_playwright, expect
 
-# --- Test Configuration ---
-SERVER_COMMAND = "node server.js"
-APP_URL = "http://localhost:8080"
-SCREENSHOT_PATH = "verification.png"
-
 def run_test():
-    """
-    Runs the end-to-end test to verify message persistence.
-    """
-    server_process = None
-    unique_message = f"Bonjour! C'est un test du {datetime.datetime.now()}"
-    print(f"Unique message for this run: '{unique_message}'")
+    server = None
+    # Supprimer l'ancienne base de données pour garantir un état propre
+    try:
+        subprocess.run(["rm", "-f", "chat.db"], check=True)
+        print("Ancienne base de données supprimée.")
+    except Exception as e:
+        print(f"Avertissement : n'a pas pu supprimer l'ancienne base de données : {e}")
 
     try:
-        # 1. Start the server as a background process
-        print(f"Starting server with command: '{SERVER_COMMAND}'")
-        server_process = subprocess.Popen(SERVER_COMMAND.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(15) # Give the server time to start
+        # Démarrer le serveur en arrière-plan
+        server = subprocess.Popen(["node", "server.js"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("Serveur démarré...")
+        time.sleep(5) # Laisser le temps au serveur de s'initialiser
 
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
 
-            # 2. Navigate to the app and set dev mode
-            print(f"Navigating to {APP_URL}")
-            page.goto(APP_URL)
+            # Intercepter l'appel API pour les modèles
+            print("Mise en place du mock pour /api/models...")
+            def handle_route(route):
+                if "/api/models" in route.request.url:
+                    print("Interception de /api/models et renvoi d'un mock.")
+                    route.fulfill(
+                        status=200,
+                        content_type="application/json",
+                        body='["mock-model:latest"]'
+                    )
+                else:
+                    route.continue_()
+            page.route("**/*", handle_route)
+
+
+            print("Navigation vers l'application...")
+            page.goto("http://localhost:8080")
+
+            # Passer en mode dev pour simplifier le test
+            print("Passage en mode 'dev'...")
             page.evaluate("localStorage.setItem('appModeOverride', 'dev')")
             page.reload()
-            print("App reloaded in 'dev' mode.")
 
-            # 3. Select persona and send a message
-            persona_select = page.locator("#personaSelect")
-            expect(persona_select).to_be_visible(timeout=10000)
+            # Attendre que la page soit prête
+            page.wait_for_load_state('networkidle', timeout=15000)
 
-            # Dynamically select the first persona
-            first_persona_option = persona_select.locator("option").first
-            persona_label_to_test = first_persona_option.text_content()
-            print(f"Dynamically selecting first persona: {persona_label_to_test}")
-            persona_select.select_option(label=persona_label_to_test)
+            # Attendre que le sélecteur de persona soit prêt
+            persona_selector = page.locator("#personaSelect")
+            expect(persona_selector).to_be_visible(timeout=10000)
 
-            msg_input = page.locator("#msgInput")
-            send_btn = page.locator("#sendBtn")
+            # Sélectionner un persona (par exemple, Lina)
+            correct_label = "Lina (voisine)"
+            print(f"Sélection du persona '{correct_label}'...")
+            persona_selector.select_option(label=correct_label)
 
-            print("Typing and sending the unique message...")
-            msg_input.fill(unique_message)
-            send_btn.click()
+            # Envoyer un message de test
+            test_message = "Ceci est un test de persistance."
+            print(f"Envoi du message : '{test_message}'")
+            page.locator("#msgInput").fill(test_message)
+            page.locator("#sendBtn").click()
 
-            # 4. Wait for the response to complete (send button is re-enabled)
-            print("Waiting for assistant's response...")
-            expect(send_btn).to_be_enabled(timeout=30000)
-            print("Response received.")
+            # Attendre que la réponse de l'assistant apparaisse
+            print("Attente de la réponse de l'assistant...")
+            last_assistant_message = page.locator(".assistant-message .chat-text").last
+            expect(last_assistant_message).not_to_be_empty(timeout=30000)
+            print("Réponse reçue.")
 
-            # 5. Reload the page to test persistence
-            print("Reloading the page to check for persistence...")
+            # Recharger la page
+            print("Rechargement de la page...")
             page.reload()
 
-            # 6. Re-select the same persona
-            expect(persona_select).to_be_visible(timeout=10000)
-            print(f"Re-selecting persona: {persona_label_to_test}")
-            persona_select.select_option(label=persona_label_to_test)
+            # Attendre que la page soit complètement chargée après le rechargement
+            page.wait_for_load_state('networkidle', timeout=15000)
+            print("Page rechargée.")
 
-            # 7. Verify the message is in the chat history
+            # Vérifier si le message de test est toujours là
+            print("Vérification de la persistance...")
             chat_box = page.locator("#chatBox")
-            message_locator = chat_box.locator(f"text='{unique_message}'")
 
-            print("Verifying the message is present in the chat history...")
-            expect(message_locator).to_be_visible(timeout=10000)
-            print("✅ Verification successful: Message was found in the chat history after reload.")
+            user_message_locator = chat_box.locator(f"text='{test_message}'")
+            expect(user_message_locator).to_be_visible(timeout=10000)
 
-            # 8. Capture a screenshot
-            page.screenshot(path=SCREENSHOT_PATH)
-            print(f"Screenshot saved to '{SCREENSHOT_PATH}'")
-
+            print("✅ Succès : Le message de test est bien présent après rechargement.")
             browser.close()
+            return True
 
     except Exception as e:
-        print(f"❌ An error occurred during the test: {e}")
+        print(f"❌ Échec du test : {e}")
+        return False
     finally:
-        # 9. Clean up the server process
-        if server_process:
-            print("Stopping the server.")
-            server_process.terminate()
-            server_process.wait()
+        if server:
+            print("Arrêt du serveur...")
+            server.terminate()
+            server.wait()
 
 if __name__ == "__main__":
-    run_test()
+    if run_test():
+        sys.exit(0)
+    else:
+        sys.exit(1)
