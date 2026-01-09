@@ -43,18 +43,27 @@ function chatRouter() {
       .join("\n\n");
 
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders?.();
 
     let clientClosed = false;
+    const keepAliveIntervalMs = 15000;
+    const keepAliveTimer = setInterval(() => {
+      if (clientClosed) return;
+      res.write(":\n\n");
+      res.flush?.();
+    }, keepAliveIntervalMs);
     req.on("close", () => {
       clientClosed = true;
+      clearInterval(keepAliveTimer);
     });
 
     const sendEvent = (payload) => {
       if (clientClosed) return;
       res.write(`data: ${JSON.stringify(payload)}\n\n`);
+      res.flush?.();
     };
 
     const finalMessages = [{ role: "system", content: systemPrompt }];
@@ -108,6 +117,7 @@ function chatRouter() {
     } catch (e) {
       sendEvent({ type: "error", error: e.message });
     } finally {
+      clearInterval(keepAliveTimer);
       if (!clientClosed) {
         res.end();
       }
