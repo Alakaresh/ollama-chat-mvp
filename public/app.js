@@ -506,7 +506,6 @@ async function sendMessage() {
   chatHistory.push({ role: "user", content: userMessage });
 
   const { message: assistantTextNode, typingIndicator, messageContainer } = appendStreamingAssistantWithIndicator();
-  let activeTypingIndicator = typingIndicator;
   msgInput.value = "";
   msgInput.focus();
 
@@ -519,9 +518,11 @@ async function sendMessage() {
   let rawResponse = "";
 
   const clearTypingIndicator = () => {
-    if (!activeTypingIndicator) return;
-    activeTypingIndicator.remove();
-    activeTypingIndicator = null;
+    if (!messageContainer) return;
+    const indicator = messageContainer.querySelector('.typing-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
   };
 
   const cleanupEmptyAssistantMessage = () => {

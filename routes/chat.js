@@ -83,7 +83,7 @@ function chatRouter() {
     const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
 
     try {
-      const { completed } = await ollamaChatStream({
+      await ollamaChatStream({
         model,
         options,
         messages: finalMessages,
@@ -95,24 +95,21 @@ function chatRouter() {
 
       const sanitizedFull = sanitizeAssistantText(full);
       full = sanitizedFull || full;
-      if (completed) {
-        sendEvent({ type: "done" });
-        try {
-          const db = getDb();
-          const stmt = db.prepare(
-            "INSERT INTO conversations (persona_id, role, content) VALUES (?, ?, ?)"
-          );
-          if (lastUserMessage?.content) {
-            stmt.run(personaId, "user", lastUserMessage.content);
-          }
-          if (full) {
-            stmt.run(personaId, "assistant", full);
-          }
-        } catch (dbError) {
-          console.error(`Failed to save conversation for persona ${personaId}:`, dbError);
+      sendEvent({ type: "done" });
+
+      try {
+        const db = getDb();
+        const stmt = db.prepare(
+          "INSERT INTO conversations (persona_id, role, content) VALUES (?, ?, ?)"
+        );
+        if (lastUserMessage?.content) {
+          stmt.run(personaId, "user", lastUserMessage.content);
         }
-      } else {
-        sendEvent({ type: "error", error: "Génération interrompue avant la fin." });
+        if (full) {
+          stmt.run(personaId, "assistant", full);
+        }
+      } catch (dbError) {
+        console.error(`Failed to save conversation for persona ${personaId}:`, dbError);
       }
     } catch (e) {
       sendEvent({ type: "error", error: e.message });
