@@ -1,7 +1,9 @@
+const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
+
 async function ollamaChatStream({ model, messages, options, onDelta }) {
   const payload = { model, messages, stream: true, options };
 
-  const r = await fetch("http://localhost:11434/api/chat", {
+  const r = await fetch(`${OLLAMA_HOST}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -30,7 +32,6 @@ async function ollamaChatStream({ model, messages, options, onDelta }) {
       }
 
       const delta = obj?.message?.content || "";
-      if (delta.includes("#")) break outerLoop;
 
       if (delta) {
         full += delta;
@@ -50,7 +51,7 @@ async function ollamaChatStream({ model, messages, options, onDelta }) {
 async function ollamaChatOnce({ model, messages, options }) {
   const payload = { model, messages, stream: false, options };
 
-  const r = await fetch("http://localhost:11434/api/chat", {
+  const r = await fetch(`${OLLAMA_HOST}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
