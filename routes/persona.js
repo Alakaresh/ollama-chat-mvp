@@ -42,6 +42,37 @@ function personaRouter() {
     }
   });
 
+  // GET /api/chats
+  router.get("/chats", (req, res) => {
+    const db = getDb();
+    try {
+      const stmt = db.prepare(
+        `SELECT p.id as personaId, p.name, p.label, p.image,
+                c.content as lastMessage, c.role as lastRole, c.timestamp as lastTimestamp
+         FROM personas p
+         JOIN conversations c
+           ON c.id = (
+             SELECT id
+             FROM conversations
+             WHERE persona_id = p.id
+             ORDER BY timestamp DESC, id DESC
+             LIMIT 1
+           )
+         WHERE EXISTS (
+           SELECT 1
+           FROM conversations
+           WHERE persona_id = p.id AND role = 'user'
+         )
+         ORDER BY c.timestamp DESC, c.id DESC`
+      );
+      const chats = stmt.all();
+      res.json(chats);
+    } catch (error) {
+      console.error("Failed to fetch chat list:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
   // PUT /api/personas/:id/image
   router.put("/personas/:id/image", express.raw({ type: ["image/*"], limit: "10mb" }), (req, res) => {
     const personaId = req.params.id;

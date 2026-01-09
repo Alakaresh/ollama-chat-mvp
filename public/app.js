@@ -7,6 +7,7 @@ const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
 const appModeToggle = document.getElementById("appModeToggle");
 const appModeLabel = document.getElementById("appModeLabel");
+const appHeaderTitle = document.getElementById("appHeaderTitle");
 const personaGrid = document.getElementById("personaGrid");
 const chatList = document.getElementById("chatList");
 const personaSearch = document.getElementById("personaSearch");
@@ -49,6 +50,9 @@ function setActiveScreen(screen, { skipHistory = false, replaceHistory = false }
   }
   if (bottomNav) {
     bottomNav.classList.toggle("is-hidden", screen === "chat");
+  }
+  if (appHeaderTitle) {
+    appHeaderTitle.textContent = screen === "home" ? "Accueil" : "Chat";
   }
   if (screen === "chats") {
     updateChatList();
@@ -247,14 +251,71 @@ function renderPersonaGrid(filter = "") {
 }
 
 function updateChatList() {
-  // This function needs a proper implementation that fetches last messages for all personas.
-  // For now, it's disabled to prevent errors. A full implementation would require a new API endpoint.
   if (!chatList) return;
   chatList.innerHTML = "";
-   const emptyState = document.createElement("div");
-  emptyState.className = "persona-subtitle";
-  emptyState.textContent = "La liste des chats récents sera bientôt disponible.";
-  chatList.appendChild(emptyState);
+
+  const renderEmptyState = (message) => {
+    const emptyState = document.createElement("div");
+    emptyState.className = "persona-subtitle";
+    emptyState.textContent = message;
+    chatList.appendChild(emptyState);
+  };
+
+  fetch("/api/chats")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch chats");
+      }
+      return response.json();
+    })
+    .then((chats) => {
+      if (!Array.isArray(chats) || chats.length === 0) {
+        renderEmptyState("Aucune conversation pour l'instant.");
+        return;
+      }
+
+      chats.forEach((chat) => {
+        const item = document.createElement("div");
+        item.className = "chat-item";
+        item.addEventListener("click", () => {
+          setActivePersona(chat.personaId);
+          setActiveScreen("chat");
+        });
+
+        const avatar = document.createElement("div");
+        avatar.className = "chat-avatar";
+        if (chat.image) {
+          avatar.classList.add("has-image");
+          avatar.style.backgroundImage = `url("${chat.image}")`;
+        } else {
+          avatar.textContent = (chat.name || "?").charAt(0).toUpperCase();
+        }
+
+        const preview = document.createElement("div");
+        preview.className = "chat-preview";
+
+        const title = document.createElement("strong");
+        title.textContent = chat.label || chat.name || "Conversation";
+
+        const excerpt = document.createElement("span");
+        const trimmedMessage = (chat.lastMessage || "").replace(/\s+/g, " ").trim();
+        const prefix = chat.lastRole === "user" ? "Vous : " : "Assistant : ";
+        const previewText = trimmedMessage ? `${prefix}${trimmedMessage}` : "Aucun message";
+        excerpt.textContent =
+          previewText.length > 140 ? `${previewText.slice(0, 140)}…` : previewText;
+
+        preview.appendChild(title);
+        preview.appendChild(excerpt);
+
+        item.appendChild(avatar);
+        item.appendChild(preview);
+        chatList.appendChild(item);
+      });
+    })
+    .catch((error) => {
+      console.error("Failed to load chat list:", error);
+      renderEmptyState("Impossible de charger les conversations.");
+    });
 }
 
 function setActivePersona(personaId) {
@@ -538,7 +599,7 @@ async function sendMessage() {
     clearTypingIndicator();
     chatHistory.push({ role: "assistant", content: fullAssistantResponse });
 
-    // updateChatList(); // Needs rework
+    updateChatList();
   } catch (e) {
     clearTypingIndicator();
     cleanupEmptyAssistantMessage();
@@ -686,6 +747,7 @@ if (resetModal) {
       }
 
       console.log(`Conversation for ${personaIdToReset} has been reset.`);
+      updateChatList();
 
     } catch (error) {
       console.error("Error resetting conversation:", error);
