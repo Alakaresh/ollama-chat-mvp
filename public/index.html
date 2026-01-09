@@ -299,6 +299,14 @@
       align-items: center;
       justify-content: center;
       font-weight: 600;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .chat-avatar.has-image {
+      background-size: cover;
+      background-position: center;
+      color: transparent;
     }
 
     .chat-avatar.has-image {
@@ -734,7 +742,7 @@
 
     <div class="app-shell" data-prod-only>
       <header class="app-header">
-        <h1>Chat</h1>
+        <h1 id="appHeaderTitle">Accueil</h1>
       </header>
       <section class="screen screen-home is-active" data-screen="home">
         <div class="search-row">

@@ -7,6 +7,7 @@ const logRequestEl = document.getElementById("log-request");
 const logResponseEl = document.getElementById("log-response");
 const appModeToggle = document.getElementById("appModeToggle");
 const appModeLabel = document.getElementById("appModeLabel");
+const appHeaderTitle = document.getElementById("appHeaderTitle");
 const personaGrid = document.getElementById("personaGrid");
 const chatList = document.getElementById("chatList");
 const personaSearch = document.getElementById("personaSearch");
@@ -49,6 +50,9 @@ function setActiveScreen(screen, { skipHistory = false, replaceHistory = false }
   }
   if (bottomNav) {
     bottomNav.classList.toggle("is-hidden", screen === "chat");
+  }
+  if (appHeaderTitle) {
+    appHeaderTitle.textContent = screen === "home" ? "Accueil" : "Chat";
   }
   if (screen === "chats") {
     updateChatList();
