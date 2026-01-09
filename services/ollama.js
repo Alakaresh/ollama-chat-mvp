@@ -12,6 +12,7 @@ async function ollamaChatStream({ model, messages, options, onDelta }) {
   const reader = r.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let full = "";
+  let completed = false;
 
   outerLoop: while (true) {
     const { value, done } = await reader.read();
@@ -36,11 +37,14 @@ async function ollamaChatStream({ model, messages, options, onDelta }) {
         onDelta?.(delta);
       }
 
-      if (obj?.done) break outerLoop;
+      if (obj?.done) {
+        completed = true;
+        break outerLoop;
+      }
     }
   }
 
-  return full;
+  return { full, completed };
 }
 
 async function ollamaChatOnce({ model, messages, options }) {
