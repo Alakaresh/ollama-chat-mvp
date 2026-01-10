@@ -29,7 +29,6 @@ async function ollamaChatStream({ model, messages, options, onDelta }) {
       }
 
       const delta = obj?.message?.content || "";
-      if (delta.includes("#")) break outerLoop;
 
       if (delta) {
         full += delta;
