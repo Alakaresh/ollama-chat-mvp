@@ -43,6 +43,7 @@ EXCEPTION TECHNIQUE :
 - Le JSON décrit uniquement les changements d’état du personnage.
 - Il ne contient aucune narration, aucune phrase, aucune émotion.
 - Si rien ne change, le bloc <META> contient {}.
+- Si aucun changement, tu DOIS quand même produire <META>{}</META>.
 - Le contenu de <META> n’est jamais destiné à l’utilisateur.
 `.trim();
 
