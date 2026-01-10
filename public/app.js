@@ -434,10 +434,16 @@ function onMessageClick(event) {
   const messageContainer = event.currentTarget;
   const role = messageContainer.dataset.messageRole;
   if (role !== "user" && role !== "assistant") return;
+  if (role === "assistant" && isFirstAssistantMessage(messageContainer)) return;
   const content = messageContainer.dataset.messageContent || "";
   if (!content.trim()) return;
   const id = messageContainer.dataset.messageId ? Number(messageContainer.dataset.messageId) : null;
   openMessageOptions({ role, content, id, messageContainer });
+}
+
+function isFirstAssistantMessage(messageContainer) {
+  const firstAssistantMessage = chatBox?.querySelector(".message-container.assistant-message");
+  return Boolean(firstAssistantMessage && firstAssistantMessage === messageContainer);
 }
 
 function append(role, text, { id } = {}) {
