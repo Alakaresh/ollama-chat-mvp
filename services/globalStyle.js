@@ -31,18 +31,6 @@ MÉTA (TECHNIQUE) :
 function buildSystemPrompt(persona, personaNsfw = false) {
   const sections = [GLOBAL_SYSTEM_PROMPT];
 
-  // Persona (optionnel) : si tu veux l'injecter ici, garde-le court et lisible.
-  // Si tu n'en as pas l'usage, supprime ce bloc.
-  if (persona && String(persona).trim().length > 0) {
-    sections.push(
-      `
-[PERSONA]
-${String(persona).trim()}
-[/PERSONA]
-`.trim()
-    );
-  }
-
   if (personaNsfw) {
     sections.push(
       `
