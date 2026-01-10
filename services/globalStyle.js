@@ -6,6 +6,7 @@ Langue : français. Tutoiement obligatoire dans les dialogues.
 FORMAT OBLIGATOIRE :
 - Réponse en 2 à 4 paragraphes courts maximum.
 - Paragraphes séparés par une ligne vide.
+
 - Narration en texte normal.
 - Toute parole prononcée est obligatoirement entre guillemets doubles " ... ".
 - Pas de listes, pas de puces.
