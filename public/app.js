@@ -798,12 +798,38 @@ async function handleDeleteMessage() {
   if (!selectedMessageContext) return;
   const { id, messageContainer } = selectedMessageContext;
   const personaId = personaSelect.value;
-  const deleted = await deleteMessageFromServer(personaId, id);
-  if (deleted) {
-    removeMessageFromHistory(id);
-    messageContainer?.remove();
-    updateChatList();
+  const confirmed = window.confirm(
+    "Supprimer ce message et tous ceux qui suivent ?"
+  );
+  if (!confirmed) {
+    closeMessageOptions();
+    return;
   }
+
+  const startIndex = chatHistory.findIndex((message) => message.id === id);
+  const removalStart = startIndex === -1 ? chatHistory.length : startIndex;
+  const messagesToRemove = chatHistory.slice(removalStart);
+
+  for (const message of messagesToRemove) {
+    if (message.id) {
+      await deleteMessageFromServer(personaId, message.id);
+    }
+  }
+
+  chatHistory = chatHistory.slice(0, removalStart);
+  const containerToRemove = messageContainer?.closest(".message-container");
+  if (containerToRemove) {
+    let current = containerToRemove;
+    while (current) {
+      const next = current.nextElementSibling;
+      current.remove();
+      current = next;
+    }
+  } else {
+    chatBox.innerHTML = "";
+    renderChatHistory(chatHistory, personas.find((p) => p.id === personaId));
+  }
+  updateChatList();
   closeMessageOptions();
 }
 
