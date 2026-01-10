@@ -78,6 +78,23 @@ function getDb() {
       logger.info("Données de test insérées.");
 
     } else {
+      const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all()
+        .map((row) => row.name);
+      if (!tables.includes("conversations")) {
+        logger.info("Création de la table 'conversations'...");
+        db.exec(`
+          CREATE TABLE conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            persona_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (persona_id) REFERENCES personas (id)
+          );
+        `);
+      }
       let columns = db.prepare("PRAGMA table_info(personas)").all();
       const hasPrompt = columns.some((column) => column.name === "prompt");
       if (hasPrompt) {
