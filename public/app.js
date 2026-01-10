@@ -23,6 +23,11 @@ const chatScreen = document.querySelector(".screen-chat");
 const resetModal = document.getElementById("resetModal");
 const confirmResetBtn = document.getElementById("confirmResetBtn");
 const cancelResetBtn = document.getElementById("cancelResetBtn");
+const messageOptionsModal = document.getElementById("messageOptionsModal");
+const messageCopyBtn = document.getElementById("messageCopyBtn");
+const messageDeleteBtn = document.getElementById("messageDeleteBtn");
+const messageRegenerateBtn = document.getElementById("messageRegenerateBtn");
+const messageOptionsPopover = document.querySelector("#messageOptionsModal .message-options-popover");
 
 
 let chatHistory = [];
@@ -36,6 +41,7 @@ const chatSessions = new Map();
 let hasInitializedHistory = false;
 let allowAppExit = false;
 let exitAttemptTimer = null;
+let selectedMessageContext = null;
 
 let personas = [];
 
@@ -155,7 +161,7 @@ function renderChatHistory(history, persona) {
     }
   }
   history.forEach((message) => {
-    append(message.role, message.content);
+    append(message.role, message.content, { id: message.id });
   });
 }
 
@@ -356,7 +362,85 @@ function setQuotedContent(container, text) {
   }
 }
 
-function append(role, text) {
+function configureMessageContainer(messageContainer, { role, content, id }) {
+  messageContainer.dataset.messageRole = role;
+  messageContainer.dataset.messageContent = content || "";
+  if (id) {
+    messageContainer.dataset.messageId = String(id);
+  } else {
+    delete messageContainer.dataset.messageId;
+  }
+}
+
+function canRegenerateMessage(messageId) {
+  if (!messageId) return false;
+  for (let i = chatHistory.length - 1; i >= 0; i -= 1) {
+    if (chatHistory[i].role === "assistant") {
+      return chatHistory[i].id === messageId;
+    }
+  }
+  return false;
+}
+
+function openMessageOptions({ role, content, id, messageContainer }) {
+  selectedMessageContext = { role, content, id, messageContainer };
+  if (messageRegenerateBtn) {
+    const showRegenerate = role === "assistant";
+    messageRegenerateBtn.hidden = !showRegenerate;
+    messageRegenerateBtn.disabled = !showRegenerate || !canRegenerateMessage(id);
+  }
+  if (messageDeleteBtn) {
+    messageDeleteBtn.disabled = !id;
+  }
+  messageOptionsModal?.classList.add("is-visible");
+  positionMessageOptions(messageContainer);
+}
+
+function closeMessageOptions() {
+  selectedMessageContext = null;
+  messageOptionsModal?.classList.remove("is-visible");
+}
+
+function positionMessageOptions(messageContainer) {
+  if (!messageOptionsPopover || !messageContainer) return;
+  const rect = messageContainer.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const padding = 12;
+
+  messageOptionsPopover.style.top = "0px";
+  messageOptionsPopover.style.left = "0px";
+
+  requestAnimationFrame(() => {
+    const popoverRect = messageOptionsPopover.getBoundingClientRect();
+    let left = rect.left;
+    if (messageContainer.classList.contains("user-message")) {
+      left = rect.right - popoverRect.width;
+    }
+    left = Math.min(Math.max(left, padding), viewportWidth - popoverRect.width - padding);
+
+    let top = rect.bottom + 8;
+    if (top + popoverRect.height > viewportHeight - padding) {
+      top = rect.top - popoverRect.height - 8;
+    }
+    top = Math.min(Math.max(top, padding), viewportHeight - popoverRect.height - padding);
+
+    messageOptionsPopover.style.left = `${left}px`;
+    messageOptionsPopover.style.top = `${top}px`;
+  });
+}
+
+function onMessageClick(event) {
+  const messageContainer = event.currentTarget;
+  const role = messageContainer.dataset.messageRole;
+  if (role !== "user" && role !== "assistant") return;
+  const content = messageContainer.dataset.messageContent || "";
+  if (!content.trim()) return;
+  const id = messageContainer.dataset.messageId ? Number(messageContainer.dataset.messageId) : null;
+  openMessageOptions({ role, content, id, messageContainer });
+}
+
+function append(role, text, { id } = {}) {
   const messageContainer = document.createElement("div");
   messageContainer.className = "message-container " + (role === "user" ? "user-message" : "assistant-message");
 
@@ -369,8 +453,13 @@ function append(role, text) {
 
   messageBubble.appendChild(message);
   messageContainer.appendChild(messageBubble);
+  configureMessageContainer(messageContainer, { role, content: text, id });
+  if (role === "user" || role === "assistant") {
+    messageContainer.addEventListener("click", onMessageClick);
+  }
   chatBox.appendChild(messageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
+  return messageContainer;
 }
 
 function appendStreamingAssistantWithIndicator() {
@@ -395,6 +484,8 @@ function appendStreamingAssistantWithIndicator() {
   messageBubble.appendChild(typingIndicator);
   messageBubble.appendChild(message);
   messageContainer.appendChild(messageBubble);
+  configureMessageContainer(messageContainer, { role: "assistant", content: "" });
+  messageContainer.addEventListener("click", onMessageClick);
   chatBox.appendChild(messageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -503,29 +594,17 @@ async function saveMessage(personaId, role, content) {
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }
+    const data = await response.json();
+    return data?.id || null;
   } catch (error) {
     console.error("Failed to save message:", error);
+    return null;
   }
 }
 
-async function sendMessage() {
-  const userMessage = msgInput.value.trim();
-  if (!userMessage) return;
-
-  const model = modelSelect.value;
-  const selectedId = personaSelect.value;
-  const selectedPersona = personas.find((p) => p.id === selectedId);
-
-  if (!selectedPersona) return;
-
-  append("user", userMessage);
-  chatHistory.push({ role: "user", content: userMessage });
-  await saveMessage(selectedId, "user", userMessage);
-
+async function streamAssistantResponse({ model, selectedPersona, selectedId }) {
   const { message: assistantTextNode, typingIndicator, messageContainer } = appendStreamingAssistantWithIndicator();
   let activeTypingIndicator = typingIndicator;
-  msgInput.value = "";
-  msgInput.focus();
 
   // Logs
   logRequestEl.textContent = "Génération en cours...";
@@ -552,7 +631,7 @@ async function sendMessage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        messages: chatHistory,
+        messages: chatHistory.map(({ role, content }) => ({ role, content })),
         persona: selectedPersona,
       }),
     });
@@ -605,6 +684,7 @@ async function sendMessage() {
           rawResponse += event.delta || "";
           logResponseEl.textContent = rawResponse;
           setQuotedContent(assistantTextNode, fullAssistantResponse);
+          messageContainer.dataset.messageContent = fullAssistantResponse;
           chatBox.scrollTop = chatBox.scrollHeight;
         } else if (event.type === "error") {
           clearTypingIndicator();
@@ -615,8 +695,15 @@ async function sendMessage() {
     }
     clearTypingIndicator();
     if (fullAssistantResponse) {
-      chatHistory.push({ role: "assistant", content: fullAssistantResponse });
-      await saveMessage(selectedId, "assistant", fullAssistantResponse);
+      const assistantEntry = { role: "assistant", content: fullAssistantResponse };
+      chatHistory.push(assistantEntry);
+      const savedId = await saveMessage(selectedId, "assistant", fullAssistantResponse);
+      assistantEntry.id = savedId || null;
+      configureMessageContainer(messageContainer, {
+        role: "assistant",
+        content: fullAssistantResponse,
+        id: savedId,
+      });
     }
 
     updateChatList();
@@ -631,7 +718,112 @@ async function sendMessage() {
   }
 }
 
+async function sendMessage() {
+  const userMessage = msgInput.value.trim();
+  if (!userMessage) return;
+
+  const model = modelSelect.value;
+  const selectedId = personaSelect.value;
+  const selectedPersona = personas.find((p) => p.id === selectedId);
+
+  if (!selectedPersona) return;
+
+  const userMessageContainer = append("user", userMessage);
+  const userEntry = { role: "user", content: userMessage };
+  chatHistory.push(userEntry);
+  const savedId = await saveMessage(selectedId, "user", userMessage);
+  userEntry.id = savedId || null;
+  configureMessageContainer(userMessageContainer, {
+    role: "user",
+    content: userMessage,
+    id: savedId,
+  });
+
+  msgInput.value = "";
+  msgInput.focus();
+
+  await streamAssistantResponse({ model, selectedPersona, selectedId });
+}
+
 sendBtn.addEventListener("click", sendMessage);
+
+async function deleteMessageFromServer(personaId, messageId) {
+  if (!messageId) return false;
+  try {
+    const response = await fetch(`/api/personas/${personaId}/conversation/${messageId}`, {
+      method: "DELETE",
+    });
+    return response.ok;
+  } catch (error) {
+    console.error("Failed to delete message:", error);
+    return false;
+  }
+}
+
+function removeMessageFromHistory(messageId) {
+  if (!messageId) return null;
+  const index = chatHistory.findIndex((message) => message.id === messageId);
+  if (index === -1) return null;
+  const [removed] = chatHistory.splice(index, 1);
+  return removed;
+}
+
+async function handleCopyMessage() {
+  if (!selectedMessageContext) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(selectedMessageContext.content);
+    } else {
+      const tempInput = document.createElement("textarea");
+      tempInput.value = selectedMessageContext.content;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      tempInput.remove();
+    }
+  } catch (error) {
+    console.error("Failed to copy message:", error);
+  } finally {
+    closeMessageOptions();
+  }
+}
+
+async function handleDeleteMessage() {
+  if (!selectedMessageContext) return;
+  const { id, messageContainer } = selectedMessageContext;
+  const personaId = personaSelect.value;
+  const deleted = await deleteMessageFromServer(personaId, id);
+  if (deleted) {
+    removeMessageFromHistory(id);
+    messageContainer?.remove();
+    updateChatList();
+  }
+  closeMessageOptions();
+}
+
+async function handleRegenerateMessage() {
+  if (!selectedMessageContext) return;
+  const { id, messageContainer } = selectedMessageContext;
+  if (!canRegenerateMessage(id)) {
+    closeMessageOptions();
+    return;
+  }
+
+  const personaId = personaSelect.value;
+  const selectedPersona = personas.find((p) => p.id === personaId);
+  const model = modelSelect.value;
+  if (!selectedPersona) {
+    closeMessageOptions();
+    return;
+  }
+
+  await deleteMessageFromServer(personaId, id);
+  removeMessageFromHistory(id);
+  messageContainer?.remove();
+  closeMessageOptions();
+
+  await streamAssistantResponse({ model, selectedPersona, selectedId: personaId });
+}
 
 quoteBtn.addEventListener("click", () => {
   const { value, selectionStart, selectionEnd } = msgInput;
@@ -787,6 +979,18 @@ if (resetModal) {
     } finally {
       resetModal.classList.remove("is-visible");
       personaIdToReset = null;
+    }
+  });
+}
+
+if (messageOptionsModal) {
+  messageCopyBtn?.addEventListener("click", handleCopyMessage);
+  messageDeleteBtn?.addEventListener("click", handleDeleteMessage);
+  messageRegenerateBtn?.addEventListener("click", handleRegenerateMessage);
+
+  messageOptionsModal.addEventListener("click", (event) => {
+    if (event.target === messageOptionsModal) {
+      closeMessageOptions();
     }
   });
 }

@@ -116,7 +116,7 @@ function personaRouter() {
     const db = getDb();
     try {
       const stmt = db.prepare(
-        "SELECT role, content FROM conversations WHERE persona_id = ? ORDER BY timestamp ASC"
+        "SELECT id, role, content FROM conversations WHERE persona_id = ? ORDER BY timestamp ASC"
       );
       const conversation = stmt.all(personaId);
       res.json(conversation);
@@ -157,6 +157,31 @@ function personaRouter() {
       res.status(204).send();
     } else {
       res.status(500).json({ error: result.error });
+    }
+  });
+
+  // DELETE /api/personas/:id/conversation/:messageId
+  router.delete("/personas/:id/conversation/:messageId", (req, res) => {
+    const personaId = req.params.id;
+    const messageId = Number.parseInt(req.params.messageId, 10);
+
+    if (!Number.isFinite(messageId)) {
+      return res.status(400).json({ error: "messageId invalide" });
+    }
+
+    const db = getDb();
+    try {
+      const stmt = db.prepare(
+        "DELETE FROM conversations WHERE persona_id = ? AND id = ?"
+      );
+      const result = stmt.run(personaId, messageId);
+      if (result.changes === 0) {
+        return res.status(404).json({ error: "Message introuvable" });
+      }
+      return res.status(204).send();
+    } catch (error) {
+      logger.error(`Failed to delete message ${messageId} for persona ${personaId}`, { error });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   });
 
