@@ -710,6 +710,12 @@
       color: #f2f2f2;
     }
 
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     #messageOptionsModal {
       background: transparent;
       align-items: flex-start;
@@ -885,6 +891,16 @@
           <span class="message-options-icon" aria-hidden="true">🔄</span>
           <span>Régénérer</span>
         </button>
+      </div>
+    </div>
+  </div>
+  <div id="deleteMessageModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 class="modal-title">Supprimer le message</h3>
+      <p>Supprimer ce message et tous ceux qui suivent ?</p>
+      <div class="modal-actions">
+        <button id="confirmDeleteMessageBtn" class="modal-button">Supprimer</button>
+        <button id="cancelDeleteMessageBtn" class="modal-button secondary">Annuler</button>
       </div>
     </div>
   </div>

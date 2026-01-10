@@ -28,6 +28,9 @@ const messageCopyBtn = document.getElementById("messageCopyBtn");
 const messageDeleteBtn = document.getElementById("messageDeleteBtn");
 const messageRegenerateBtn = document.getElementById("messageRegenerateBtn");
 const messageOptionsPopover = document.querySelector("#messageOptionsModal .message-options-popover");
+const deleteMessageModal = document.getElementById("deleteMessageModal");
+const confirmDeleteMessageBtn = document.getElementById("confirmDeleteMessageBtn");
+const cancelDeleteMessageBtn = document.getElementById("cancelDeleteMessageBtn");
 
 
 let chatHistory = [];
@@ -42,6 +45,7 @@ let hasInitializedHistory = false;
 let allowAppExit = false;
 let exitAttemptTimer = null;
 let selectedMessageContext = null;
+let deleteMessageContext = null;
 
 let personas = [];
 
@@ -796,41 +800,9 @@ async function handleCopyMessage() {
 
 async function handleDeleteMessage() {
   if (!selectedMessageContext) return;
-  const { id, messageContainer } = selectedMessageContext;
-  const personaId = personaSelect.value;
-  const confirmed = window.confirm(
-    "Supprimer ce message et tous ceux qui suivent ?"
-  );
-  if (!confirmed) {
-    closeMessageOptions();
-    return;
-  }
-
-  const startIndex = chatHistory.findIndex((message) => message.id === id);
-  const removalStart = startIndex === -1 ? chatHistory.length : startIndex;
-  const messagesToRemove = chatHistory.slice(removalStart);
-
-  for (const message of messagesToRemove) {
-    if (message.id) {
-      await deleteMessageFromServer(personaId, message.id);
-    }
-  }
-
-  chatHistory = chatHistory.slice(0, removalStart);
-  const containerToRemove = messageContainer?.closest(".message-container");
-  if (containerToRemove) {
-    let current = containerToRemove;
-    while (current) {
-      const next = current.nextElementSibling;
-      current.remove();
-      current = next;
-    }
-  } else {
-    chatBox.innerHTML = "";
-    renderChatHistory(chatHistory, personas.find((p) => p.id === personaId));
-  }
-  updateChatList();
+  deleteMessageContext = { ...selectedMessageContext };
   closeMessageOptions();
+  deleteMessageModal?.classList.add("is-visible");
 }
 
 async function handleRegenerateMessage() {
@@ -1024,6 +996,52 @@ if (messageOptionsModal) {
     if (event.target === messageOptionsModal) {
       closeMessageOptions();
     }
+  });
+}
+
+if (deleteMessageModal) {
+  const closeDeleteModal = () => {
+    deleteMessageModal.classList.remove("is-visible");
+    deleteMessageContext = null;
+  };
+
+  cancelDeleteMessageBtn?.addEventListener("click", closeDeleteModal);
+  deleteMessageModal.addEventListener("click", (event) => {
+    if (event.target === deleteMessageModal) {
+      closeDeleteModal();
+    }
+  });
+
+  confirmDeleteMessageBtn?.addEventListener("click", async () => {
+    if (!deleteMessageContext) return;
+    const { id, messageContainer } = deleteMessageContext;
+    const personaId = personaSelect.value;
+
+    const startIndex = chatHistory.findIndex((message) => message.id === id);
+    const removalStart = startIndex === -1 ? chatHistory.length : startIndex;
+    const messagesToRemove = chatHistory.slice(removalStart);
+
+    for (const message of messagesToRemove) {
+      if (message.id) {
+        await deleteMessageFromServer(personaId, message.id);
+      }
+    }
+
+    chatHistory = chatHistory.slice(0, removalStart);
+    const containerToRemove = messageContainer?.closest(".message-container");
+    if (containerToRemove) {
+      let current = containerToRemove;
+      while (current) {
+        const next = current.nextElementSibling;
+        current.remove();
+        current = next;
+      }
+    } else {
+      chatBox.innerHTML = "";
+      renderChatHistory(chatHistory, personas.find((p) => p.id === personaId));
+    }
+    updateChatList();
+    closeDeleteModal();
   });
 }
 
