@@ -705,6 +705,21 @@
       margin-top: 8px;
     }
 
+    .modal-button.secondary {
+      background: #3a3a3a;
+      color: #f2f2f2;
+    }
+
+    .message-options-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .message-container:not(.environment-message) .message-bubble {
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       .main-wrapper {
         max-width: 100%;
@@ -806,7 +821,18 @@
         Cette action est irréversible.
       </p>
       <button id="confirmResetBtn" class="modal-button">Réinitialiser</button>
-      <button id="cancelResetBtn" class="modal-button" style="background: #3a3a3a; color: #f2f2f2;">Annuler</button>
+      <button id="cancelResetBtn" class="modal-button secondary">Annuler</button>
+    </div>
+  </div>
+  <div id="messageOptionsModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 class="modal-title">Options du message</h3>
+      <div class="message-options-actions">
+        <button id="messageCopyBtn" class="modal-button">Copier</button>
+        <button id="messageDeleteBtn" class="modal-button secondary">Supprimer</button>
+        <button id="messageRegenerateBtn" class="modal-button">Régénérer</button>
+      </div>
+      <button id="messageOptionsCloseBtn" class="modal-button secondary">Annuler</button>
     </div>
   </div>
 </body>
