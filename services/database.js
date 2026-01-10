@@ -1,6 +1,7 @@
 const Database = require("better-sqlite3");
 const fs = require("fs");
 const path = require("path");
+const logger = require("./logger");
 const DB_FILE = "chat.db";
 
 let db;
@@ -14,7 +15,7 @@ function getDb() {
     const tableExists = stmt.get();
 
     if (!tableExists) {
-      console.log("Création du schéma de la base de données...");
+      logger.info("Création du schéma de la base de données...");
       db.exec(`
         CREATE TABLE personas (
           id TEXT PRIMARY KEY,
@@ -57,9 +58,9 @@ function getDb() {
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
       `);
-      console.log("Schéma créé.");
+      logger.info("Schéma créé.");
 
-      console.log("Insertion des données de test (seed)...");
+      logger.info("Insertion des données de test (seed)...");
       const stmt = db.prepare(
         `INSERT INTO personas (id, name, label, nsfw, tags, introduction, environment, image)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -74,13 +75,13 @@ function getDb() {
         'La scène se déroule dans un immeuble résidentiel en début de soirée. Le couloir est calme, éclairé par une lumière chaude. On entend au loin le bruit feutré de la ville. Lina se tient à la porte de son appartement, visiblement détendue, comme si elle attendait une interaction.',
         '/uploads/persona-Lina-1767891711768.png'
       );
-      console.log("Données de test insérées.");
+      logger.info("Données de test insérées.");
 
     } else {
       let columns = db.prepare("PRAGMA table_info(personas)").all();
       const hasPrompt = columns.some((column) => column.name === "prompt");
       if (hasPrompt) {
-        console.log("Suppression de la colonne 'prompt' de la table personas...");
+        logger.info("Suppression de la colonne 'prompt' de la table personas...");
         db.exec("PRAGMA foreign_keys = OFF;");
         db.exec(`
           CREATE TABLE personas_new (
@@ -106,12 +107,12 @@ function getDb() {
       }
       const hasEnvironment = columns.some((column) => column.name === "environment");
       if (!hasEnvironment) {
-        console.log("Ajout de la colonne 'environment' à la table personas...");
+        logger.info("Ajout de la colonne 'environment' à la table personas...");
         db.exec("ALTER TABLE personas ADD COLUMN environment TEXT");
       }
       const hasImage = columns.some((column) => column.name === "image");
       if (!hasImage) {
-        console.log("Ajout de la colonne 'image' à la table personas...");
+        logger.info("Ajout de la colonne 'image' à la table personas...");
         db.exec("ALTER TABLE personas ADD COLUMN image TEXT");
       }
 
@@ -139,7 +140,7 @@ function closeDb() {
   if (db) {
     db.close();
     db = null;
-    console.log("Base de données fermée.");
+    logger.info("Base de données fermée.");
   }
 }
 
@@ -157,7 +158,7 @@ function deleteConversation(personaId) {
     }
     return { success: true };
   } catch (error) {
-    console.error(`Failed to delete conversation for persona ${personaId}:`, error);
+    logger.error(`Failed to delete conversation for persona ${personaId}`, { error });
     return { success: false, error: "Internal Server Error" };
   }
 }

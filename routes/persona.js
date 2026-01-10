@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const { getDb, deleteConversation } = require("../services/database");
+const logger = require("../services/logger");
 
 const uploadDir = path.join(__dirname, "..", "public", "uploads");
 const imageMimeExtensions = {
@@ -30,14 +31,14 @@ function personaRouter() {
           try {
             p.tags = JSON.parse(p.tags);
           } catch (e) {
-            console.error(`Could not parse tags for persona ${p.id}:`, p.tags);
+            logger.error(`Could not parse tags for persona ${p.id}`, { tags: p.tags });
             p.tags = [];
           }
         }
       });
       res.json(personas);
     } catch (error) {
-      console.error("Failed to fetch personas:", error);
+      logger.error("Failed to fetch personas", { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -68,7 +69,7 @@ function personaRouter() {
       const chats = stmt.all();
       res.json(chats);
     } catch (error) {
-      console.error("Failed to fetch chat list:", error);
+      logger.error("Failed to fetch chat list", { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -104,7 +105,7 @@ function personaRouter() {
 
       res.status(200).json({ image: imagePath });
     } catch (error) {
-      console.error(`Failed to upload image for persona ${personaId}:`, error);
+      logger.error(`Failed to upload image for persona ${personaId}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -120,7 +121,7 @@ function personaRouter() {
       const conversation = stmt.all(personaId);
       res.json(conversation);
     } catch (error) {
-      console.error(`Failed to fetch conversation for persona ${personaId}:`, error);
+      logger.error(`Failed to fetch conversation for persona ${personaId}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -142,7 +143,7 @@ function personaRouter() {
       const result = stmt.run(personaId, role, content);
       res.status(201).json({ id: result.lastInsertRowid });
     } catch (error) {
-      console.error(`Failed to save message for persona ${personaId}:`, error);
+      logger.error(`Failed to save message for persona ${personaId}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -199,7 +200,7 @@ function personaRouter() {
 
       res.json(response);
     } catch (error) {
-      console.error(`Failed to fetch full data for persona ${personaId}:`, error);
+      logger.error(`Failed to fetch full data for persona ${personaId}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -218,7 +219,7 @@ function personaRouter() {
         const meiInfo = db.prepare("SELECT id FROM personas WHERE name = ?").get("Mei");
 
         if (!meiInfo) {
-            console.warn("Could not find 'Mei' persona for template, returning blank template.");
+            logger.warn("Could not find 'Mei' persona for template, returning blank template.");
             return res.json(blankTemplate);
         }
 
@@ -230,7 +231,7 @@ function personaRouter() {
         const data = stmt.get(personaId);
 
         if (!data) {
-            console.error("Found 'Mei' ID but failed to fetch full data, returning blank template.");
+            logger.error("Found 'Mei' ID but failed to fetch full data, returning blank template.");
             return res.json(blankTemplate);
         }
 
@@ -258,7 +259,7 @@ function personaRouter() {
         res.json(template);
 
     } catch (error) {
-        console.error(`Failed to fetch character template from Mei:`, error);
+        logger.error("Failed to fetch character template from Mei", { error });
         res.status(500).json(blankTemplate);
     }
   });
@@ -331,7 +332,7 @@ function personaRouter() {
       })();
       res.status(200).json({ success: true, persona_id });
     } catch (error) {
-      console.error(`Failed to update character data for persona ${persona_id}:`, error);
+      logger.error(`Failed to update character data for persona ${persona_id}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
     }
   });

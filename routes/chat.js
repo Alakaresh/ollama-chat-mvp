@@ -2,6 +2,7 @@ const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const { buildSystemPrompt, sanitizeAssistantText } = require("../services/globalStyle");
 const { generateDetailedPrompt } = require("../services/promptBuilder");
+const logger = require("../services/logger");
 
 function chatRouter() {
   const router = express.Router();
@@ -74,6 +75,7 @@ function chatRouter() {
       sanitizeAssistantText(full);
       sendEvent({ type: "done" });
     } catch (e) {
+      logger.error("Streaming chat failed", { error: e, model });
       sendEvent({ type: "error", error: e.message });
     } finally {
       res.end();
