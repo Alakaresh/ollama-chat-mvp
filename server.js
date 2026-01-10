@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const { getDb } = require("./services/database");
+const logger = require("./services/logger");
 
 const { modelsRouter } = require("./routes/models");
 const { chatRouter } = require("./routes/chat");
@@ -25,6 +26,19 @@ function isCloudflareRequest(req) {
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+    logger.info("HTTP request completed", {
+      method: req.method,
+      route: req.originalUrl,
+      status: res.statusCode,
+      durationMs: Number(durationMs.toFixed(2)),
+    });
+  });
+  next();
+});
 
 app.get("/management", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "management.html"));
@@ -42,4 +56,4 @@ app.use("/api", personaRouter());
 
 const PORT = 8080;
 getDb();
-app.listen(PORT, () => console.log(`✅ Server: http://localhost:${PORT}`));
+app.listen(PORT, () => logger.info(`✅ Server: http://localhost:${PORT}`));
