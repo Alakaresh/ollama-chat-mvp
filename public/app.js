@@ -27,6 +27,7 @@ const messageOptionsModal = document.getElementById("messageOptionsModal");
 const messageCopyBtn = document.getElementById("messageCopyBtn");
 const messageDeleteBtn = document.getElementById("messageDeleteBtn");
 const messageRegenerateBtn = document.getElementById("messageRegenerateBtn");
+const messageOptionsPopover = document.querySelector("#messageOptionsModal .message-options-popover");
 
 
 let chatHistory = [];
@@ -392,11 +393,41 @@ function openMessageOptions({ role, content, id, messageContainer }) {
     messageDeleteBtn.disabled = !id;
   }
   messageOptionsModal?.classList.add("is-visible");
+  positionMessageOptions(messageContainer);
 }
 
 function closeMessageOptions() {
   selectedMessageContext = null;
   messageOptionsModal?.classList.remove("is-visible");
+}
+
+function positionMessageOptions(messageContainer) {
+  if (!messageOptionsPopover || !messageContainer) return;
+  const rect = messageContainer.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const padding = 12;
+
+  messageOptionsPopover.style.top = "0px";
+  messageOptionsPopover.style.left = "0px";
+
+  requestAnimationFrame(() => {
+    const popoverRect = messageOptionsPopover.getBoundingClientRect();
+    let left = rect.left;
+    if (messageContainer.classList.contains("user-message")) {
+      left = rect.right - popoverRect.width;
+    }
+    left = Math.min(Math.max(left, padding), viewportWidth - popoverRect.width - padding);
+
+    let top = rect.bottom + 8;
+    if (top + popoverRect.height > viewportHeight - padding) {
+      top = rect.top - popoverRect.height - 8;
+    }
+    top = Math.min(Math.max(top, padding), viewportHeight - popoverRect.height - padding);
+
+    messageOptionsPopover.style.left = `${left}px`;
+    messageOptionsPopover.style.top = `${top}px`;
+  });
 }
 
 function onMessageClick(event) {
