@@ -9,6 +9,8 @@ let db;
 function getDb() {
   if (!db) {
     db = new Database(DB_FILE); // removed verbose logging
+    db.pragma("journal_mode = WAL");
+    db.pragma("busy_timeout = 5000");
     const stmt = db.prepare(
       `SELECT name FROM sqlite_master WHERE type='table' AND name='personas'`
     );
