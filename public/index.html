@@ -710,10 +710,45 @@
       color: #f2f2f2;
     }
 
-    .message-options-actions {
+    #messageOptionsModal {
+      align-items: flex-end;
+    }
+
+    #messageOptionsModal .modal {
+      width: calc(100% - 24px);
+      max-width: 420px;
+      margin-bottom: 16px;
+      padding: 16px 12px;
+    }
+
+    .message-options-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      gap: 8px;
+      text-align: center;
+    }
+
+    .message-options-action {
+      background: transparent;
+      border: none;
+      color: #f2f2f2;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .message-options-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: #3a3a3a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
     }
 
     .message-container:not(.environment-message) .message-bubble {
@@ -826,13 +861,20 @@
   </div>
   <div id="messageOptionsModal" class="modal-backdrop">
     <div class="modal">
-      <h3 class="modal-title">Options du message</h3>
-      <div class="message-options-actions">
-        <button id="messageCopyBtn" class="modal-button">Copier</button>
-        <button id="messageDeleteBtn" class="modal-button secondary">Supprimer</button>
-        <button id="messageRegenerateBtn" class="modal-button">Régénérer</button>
+      <div class="message-options-bar">
+        <button id="messageCopyBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">📋</span>
+          <span>Copier</span>
+        </button>
+        <button id="messageDeleteBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">🗑️</span>
+          <span>Supprimer</span>
+        </button>
+        <button id="messageRegenerateBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">🔄</span>
+          <span>Régénérer</span>
+        </button>
       </div>
-      <button id="messageOptionsCloseBtn" class="modal-button secondary">Annuler</button>
     </div>
   </div>
 </body>

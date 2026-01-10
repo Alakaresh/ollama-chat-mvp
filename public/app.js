@@ -27,7 +27,6 @@ const messageOptionsModal = document.getElementById("messageOptionsModal");
 const messageCopyBtn = document.getElementById("messageCopyBtn");
 const messageDeleteBtn = document.getElementById("messageDeleteBtn");
 const messageRegenerateBtn = document.getElementById("messageRegenerateBtn");
-const messageOptionsCloseBtn = document.getElementById("messageOptionsCloseBtn");
 
 
 let chatHistory = [];
@@ -954,7 +953,6 @@ if (resetModal) {
 }
 
 if (messageOptionsModal) {
-  messageOptionsCloseBtn?.addEventListener("click", closeMessageOptions);
   messageCopyBtn?.addEventListener("click", handleCopyMessage);
   messageDeleteBtn?.addEventListener("click", handleDeleteMessage);
   messageRegenerateBtn?.addEventListener("click", handleRegenerateMessage);
