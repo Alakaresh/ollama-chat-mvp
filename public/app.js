@@ -622,7 +622,9 @@ async function streamAssistantResponse({ model, selectedPersona, selectedId }) {
 
   sendBtn.disabled = true;
   let fullAssistantResponse = "";
+  let fullAssistantStorage = "";
   let rawResponse = "";
+  let hideDevSegments = false;
 
   const clearTypingIndicator = () => {
     if (!activeTypingIndicator) return;
@@ -690,12 +692,29 @@ async function streamAssistantResponse({ model, selectedPersona, selectedId }) {
           logRequestEl.textContent = formatLogJson(event.params);
         } else if (event.type === "delta") {
           clearTypingIndicator();
-          fullAssistantResponse += event.delta || "";
-          rawResponse += event.delta || "";
-          logResponseEl.textContent = rawResponse;
-          setQuotedContent(assistantTextNode, fullAssistantResponse);
-          messageContainer.dataset.messageContent = fullAssistantResponse;
-          chatBox.scrollTop = chatBox.scrollHeight;
+          const delta = event.delta || "";
+          fullAssistantStorage += delta;
+
+          let displayDelta = delta;
+          if (!hideDevSegments) {
+            const hashIndex = delta.indexOf("#");
+            if (hashIndex !== -1) {
+              // "#" sert uniquement à masquer l'affichage pendant le dev.
+              displayDelta = delta.slice(0, hashIndex);
+              hideDevSegments = true;
+            }
+          } else {
+            displayDelta = "";
+          }
+
+          if (displayDelta) {
+            fullAssistantResponse += displayDelta;
+            rawResponse += displayDelta;
+            logResponseEl.textContent = rawResponse;
+            setQuotedContent(assistantTextNode, fullAssistantResponse);
+            messageContainer.dataset.messageContent = fullAssistantResponse;
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
         } else if (event.type === "error") {
           clearTypingIndicator();
           cleanupEmptyAssistantMessage();
@@ -704,10 +723,10 @@ async function streamAssistantResponse({ model, selectedPersona, selectedId }) {
       }
     }
     clearTypingIndicator();
-    if (fullAssistantResponse) {
-      const assistantEntry = { role: "assistant", content: fullAssistantResponse };
+    if (fullAssistantStorage) {
+      const assistantEntry = { role: "assistant", content: fullAssistantStorage };
       chatHistory.push(assistantEntry);
-      const savedId = await saveMessage(selectedId, "assistant", fullAssistantResponse);
+      const savedId = await saveMessage(selectedId, "assistant", fullAssistantStorage);
       assistantEntry.id = savedId || null;
       configureMessageContainer(messageContainer, {
         role: "assistant",
