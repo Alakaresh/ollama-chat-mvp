@@ -705,6 +705,67 @@
       margin-top: 8px;
     }
 
+    .modal-button.secondary {
+      background: #3a3a3a;
+      color: #f2f2f2;
+    }
+
+    #messageOptionsModal {
+      background: transparent;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    .message-options-popover {
+      position: absolute;
+      width: max-content;
+      max-width: calc(100% - 24px);
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: rgba(28, 28, 28, 0.95);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+    }
+
+    .message-options-bar {
+      display: flex;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .message-options-action {
+      background: transparent;
+      border: none;
+      color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 2px;
+      min-width: 54px;
+    }
+
+    .message-options-action[hidden] {
+      display: none;
+    }
+
+    .message-options-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(58, 58, 58, 0.85);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .message-container:not(.environment-message) .message-bubble {
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       .main-wrapper {
         max-width: 100%;
@@ -806,7 +867,25 @@
         Cette action est irréversible.
       </p>
       <button id="confirmResetBtn" class="modal-button">Réinitialiser</button>
-      <button id="cancelResetBtn" class="modal-button" style="background: #3a3a3a; color: #f2f2f2;">Annuler</button>
+      <button id="cancelResetBtn" class="modal-button secondary">Annuler</button>
+    </div>
+  </div>
+  <div id="messageOptionsModal" class="modal-backdrop">
+    <div class="modal message-options-popover">
+      <div class="message-options-bar">
+        <button id="messageCopyBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">📋</span>
+          <span>Copier</span>
+        </button>
+        <button id="messageDeleteBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">🗑️</span>
+          <span>Supprimer</span>
+        </button>
+        <button id="messageRegenerateBtn" class="message-options-action" type="button">
+          <span class="message-options-icon" aria-hidden="true">🔄</span>
+          <span>Régénérer</span>
+        </button>
+      </div>
     </div>
   </div>
 </body>
