@@ -8,35 +8,69 @@ const DB_PATH = '.lancedb';
 const OLLAMA_EMBED_MODEL = 'nomic-embed-text';
 let db;
 let table;
+let vectorSearchEnabled = true;
 
 function getOllamaHost() {
     return process.env.OLLAMA_HOST || 'http://localhost:11434';
 }
 
 async function generateEmbedding(text) {
-    const url = `${getOllamaHost()}/api/embeddings`;
+    const baseUrl = getOllamaHost().replace(/\/(api|v1)\/?$/, '');
+    const endpoints = [
+        {
+            url: `${baseUrl}/api/embeddings`,
+            payload: { model: OLLAMA_EMBED_MODEL, prompt: text },
+            getEmbedding: data => data?.embedding,
+        },
+        {
+            url: `${baseUrl}/v1/embeddings`,
+            payload: { model: OLLAMA_EMBED_MODEL, input: text },
+            getEmbedding: data => data?.data?.[0]?.embedding,
+        },
+    ];
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: OLLAMA_EMBED_MODEL,
-                prompt: text,
-            }),
-        });
-        if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.statusText}`);
+        let lastError;
+        for (const endpoint of endpoints) {
+            const response = await fetch(endpoint.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(endpoint.payload),
+            });
+            const responseText = await response.text();
+            let data;
+            if (responseText) {
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    lastError = new Error(`Ollama API error (${response.status}): ${responseText}`);
+                    lastError.status = response.status;
+                    continue;
+                }
+            }
+            if (!response.ok) {
+                const errorMessage = data?.error || responseText || response.statusText;
+                lastError = new Error(`Ollama API error (${response.status}): ${errorMessage}`);
+                lastError.status = response.status;
+                if (response.status !== 404) {
+                    break;
+                }
+                continue;
+            }
+            const embedding = endpoint.getEmbedding(data);
+            if (!embedding) {
+                throw new Error('Ollama API error: embedding missing from response');
+            }
+            return embedding;
         }
-        const data = await response.json();
-        return data.embedding;
+        throw lastError || new Error('Ollama API error: no embeddings endpoint available');
     } catch (error) {
-        logger.error('Failed to generate embedding via Ollama', { error: error.message, url });
+        logger.error('Failed to generate embedding via Ollama', { error: error.message, baseUrl });
         throw error;
     }
 }
 
 async function initialize() {
-    if (table) return;
+    if (table || !vectorSearchEnabled) return;
     try {
         const uri = path.join(__dirname, '..', DB_PATH);
         db = await lancedb.connect(uri);
@@ -58,12 +92,14 @@ async function initialize() {
         await synchronize();
     } catch (error) {
         logger.error('Failed to initialize LanceDB', { error });
-        throw error;
+        vectorSearchEnabled = false;
+        logger.warn('Vector search disabled due to initialization failure.');
     }
 }
 
 async function synchronize() {
     logger.info('Synchronizing SQLite memories with LanceDB...');
+    if (!table) return;
     const sqlite = getDb();
     const memories = sqlite.prepare('SELECT id, content, persona_id FROM memories').all();
     const indexedIds = new Set((await table.search().limit(10000).execute()).map(r => r.id));
@@ -94,20 +130,36 @@ async function addMemory({ persona_id, type, content }) {
     const info = stmt.run(persona_id, type, content);
     const memoryId = info.lastInsertRowid;
 
-    const embedding = await generateEmbedding(content);
+    if (!table) {
+        logger.warn('Skipping vector index update; LanceDB is unavailable.');
+        return memoryId;
+    }
 
-    await table.add([{
-        vector: embedding,
-        id: memoryId,
-        persona_id
-    }]);
-    logger.info(`Added new memory (ID: ${memoryId}) to both SQLite and LanceDB.`);
+    try {
+        const embedding = await generateEmbedding(content);
+
+        await table.add([{
+            vector: embedding,
+            id: memoryId,
+            persona_id
+        }]);
+        logger.info(`Added new memory (ID: ${memoryId}) to both SQLite and LanceDB.`);
+    } catch (error) {
+        logger.warn('Failed to add memory to LanceDB; stored only in SQLite.', { error: error.message });
+    }
     return memoryId;
 }
 
 async function searchMemories({ queryText, persona_id, k = 5, type = null }) {
     if (!table) await initialize();
-    const queryEmbedding = await generateEmbedding(queryText);
+    if (!table) return [];
+    let queryEmbedding;
+    try {
+        queryEmbedding = await generateEmbedding(queryText);
+    } catch (error) {
+        logger.warn('Skipping vector search; embedding generation failed.', { error: error.message });
+        return [];
+    }
 
     let query = table.search(queryEmbedding)
                      .where(`persona_id = '${persona_id}'`)
