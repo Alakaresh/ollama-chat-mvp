@@ -2,6 +2,7 @@ const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const { buildSystemPrompt, processAssistantOutput } = require("../services/globalStyle");
 const { generateDetailedPrompt } = require("../services/promptBuilder");
+const { searchMemories, addMemory } = require("../services/vectorService");
 const logger = require("../services/logger");
 
 function chatRouter() {
@@ -33,9 +34,24 @@ function chatRouter() {
       persona.nsfw
     );
     const detailedPrompt = generateDetailedPrompt(persona);
-    const systemPrompt = [baseSystemPrompt, detailedPrompt]
+    let systemPrompt = [baseSystemPrompt, detailedPrompt]
       .filter(Boolean)
       .join("\n\n");
+
+    // RAG - Step 1: Search for relevant memories
+    const userMessage = messages[messages.length - 1].content;
+    const memories = await searchMemories({ queryText: userMessage, persona_id: persona.id });
+
+    if (memories.length > 0) {
+      const memoryBlock = `
+--- LONG-TERM MEMORY ---
+Here is a list of potentially relevant memories, in order of relevance. Use them to enrich your response and maintain consistency.
+
+${memories.map(m => `- ${m}`).join('\n')}
+--- END OF MEMORY ---
+      `;
+      systemPrompt += `\n\n${memoryBlock}`;
+    }
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -59,7 +75,7 @@ function chatRouter() {
       params: { model, options, messages: finalMessages },
     });
 
-    let full = "";
+    let fullResponse = "";
 
     try {
       await ollamaChatStream({
@@ -67,12 +83,38 @@ function chatRouter() {
         options,
         messages: finalMessages,
         onDelta: (delta) => {
-          full += delta;
+          fullResponse += delta;
           sendEvent({ type: "delta", delta });
         },
       });
 
-      processAssistantOutput(full);
+      // RAG - Step 2 & 3: Process output and update memory
+      let finalContent = fullResponse;
+      const metaRegex = /<META>([\s\S]*?)<\/META>/;
+      const metaMatch = fullResponse.match(metaRegex);
+
+      if (metaMatch) {
+          try {
+              const metaContent = metaMatch[1].trim();
+              logger.info('META tag found, adding to static memory.', { meta: metaContent });
+              await addMemory({
+                  persona_id: persona.id,
+                  type: 'static',
+                  content: metaContent
+              });
+              finalContent = finalContent.replace(metaRegex, '').trim();
+          } catch (e) {
+              logger.error('Failed to process META tag.', { error: e });
+          }
+      }
+
+      await addMemory({
+          persona_id: persona.id,
+          type: 'conversation',
+          content: `User: ${userMessage}\n${persona.name}: ${finalContent}`
+      });
+
+      processAssistantOutput(finalContent); // This is a fire-and-forget function
       sendEvent({ type: "done" });
     } catch (e) {
       logger.error("Streaming chat failed", { error: e, model });

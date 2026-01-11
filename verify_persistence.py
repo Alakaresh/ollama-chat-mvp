@@ -33,6 +33,15 @@ def run_test():
                         content_type="application/json",
                         body='["mock-model:latest"]'
                     )
+                elif "/api/embeddings" in route.request.url:
+                    print("Interception de /api/embeddings et renvoi d'un mock.")
+                    # nomic-embed-text uses 768 dimensions
+                    mock_embedding = [0.1] * 768
+                    route.fulfill(
+                        status=200,
+                        content_type="application/json",
+                        body=f'{{"embedding": {str(mock_embedding)}}}'
+                    )
                 else:
                     route.continue_()
             page.route("**/*", handle_route)

@@ -46,6 +46,15 @@ function getDb() {
           FOREIGN KEY (persona_id) REFERENCES personas (id)
         );
 
+        CREATE TABLE memories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          persona_id TEXT NOT NULL,
+          type TEXT NOT NULL, -- 'static', 'conversation'
+          content TEXT NOT NULL,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (persona_id) REFERENCES personas (id)
+        );
+
         CREATE TABLE relationships (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           persona_id TEXT NOT NULL UNIQUE,
