@@ -3,6 +3,7 @@ const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const { buildSystemPrompt, processAssistantOutput } = require("../services/globalStyle");
 const { generateDetailedPrompt } = require("../services/promptBuilder");
 const logger = require("../services/logger");
+const vectorService = require("../services/vectorService");
 
 function chatRouter() {
   const router = express.Router();
@@ -50,6 +51,14 @@ function chatRouter() {
 
     if (persona.environment) {
       finalMessages.push({ role: "system", content: persona.environment });
+    }
+
+    const userMessage = messages[messages.length - 1].content;
+    const context = await vectorService.queryContext(persona.id, userMessage);
+
+    if (context.length > 0) {
+      const contextSystemMessage = `[Contexte pertinent récupéré pour cette conversation :\n${context.join("\n")}]`;
+      finalMessages.push({ role: "system", content: contextSystemMessage });
     }
 
     finalMessages.push(...messages);

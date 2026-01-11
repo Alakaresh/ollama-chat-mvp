@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { getDb, deleteConversation } = require("../services/database");
 const logger = require("../services/logger");
+const vectorService = require("../services/vectorService");
 
 const uploadDir = path.join(__dirname, "..", "public", "uploads");
 const imageMimeExtensions = {
@@ -141,7 +142,12 @@ function personaRouter() {
         "INSERT INTO conversations (persona_id, role, content) VALUES (?, ?, ?)"
       );
       const result = stmt.run(personaId, role, content);
-      res.status(201).json({ id: result.lastInsertRowid });
+      const messageId = result.lastInsertRowid;
+
+      // Add message to vector collection with stable ID
+      vectorService.addMessageToCollection(personaId, { id: messageId, role, content });
+
+      res.status(201).json({ id: messageId });
     } catch (error) {
       logger.error(`Failed to save message for persona ${personaId}`, { error });
       res.status(500).json({ error: "Internal Server Error" });
@@ -355,6 +361,10 @@ function personaRouter() {
           db.prepare("INSERT OR REPLACE INTO outfits (persona_id, data) VALUES (?, ?)").run(persona_id, JSON.stringify(outfit));
         }
       })();
+
+      // Re-index persona data in vector DB
+      vectorService.indexPersonaData(persona_id);
+
       res.status(200).json({ success: true, persona_id });
     } catch (error) {
       logger.error(`Failed to update character data for persona ${persona_id}`, { error });

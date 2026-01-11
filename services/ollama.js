@@ -56,4 +56,16 @@ async function ollamaChatOnce({ model, messages, options }) {
   return data?.message?.content || "";
 }
 
-module.exports = { ollamaChatStream, ollamaChatOnce };
+async function ollamaGenerateEmbedding({ model, prompt }) {
+  const payload = { model, prompt };
+  const r = await fetch("http://localhost:11434/api/embeddings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!r.ok) throw new Error(`Ollama HTTP ${r.status}`);
+  return await r.json();
+}
+
+module.exports = { ollamaChatStream, ollamaChatOnce, ollamaGenerateEmbedding };
