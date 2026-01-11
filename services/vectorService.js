@@ -1,5 +1,6 @@
 const lancedb = require('@lancedb/lancedb');
 const path = require('path');
+const { Schema, Field, Float32, FixedSizeList, Int32, Utf8 } = require('apache-arrow');
 const { getDb } = require('./database');
 const logger = require('./logger');
 
@@ -43,7 +44,13 @@ async function initialize() {
 
         if (!tableNames.includes('vectors')) {
             logger.info('LanceDB table "vectors" not found, creating new one.');
-            table = await db.createTable('vectors', [{ vector: [], id: 0, persona_id: '' }]);
+            const schemaEmbedding = await generateEmbedding('schema probe');
+            const schema = new Schema([
+                new Field('vector', new FixedSizeList(schemaEmbedding.length, new Field('item', new Float32(), false)), false),
+                new Field('id', new Int32(), false),
+                new Field('persona_id', new Utf8(), false),
+            ]);
+            table = await db.createEmptyTable('vectors', schema);
         } else {
             table = await db.openTable('vectors');
         }
