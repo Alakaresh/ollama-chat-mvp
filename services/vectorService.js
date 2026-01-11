@@ -131,15 +131,6 @@ async function searchMemories({ queryText, persona_id, k = 5, type = null }) {
 
     return sortedMemories.map(m => m.content);
 }
-    if (memoryIds.length === 0) return [];
-
-    const sqlite = getDb();
-    const placeholders = memoryIds.map(() => '?').join(',');
-    const stmt = sqlite.prepare(`SELECT content FROM memories WHERE id IN (${placeholders})`);
-    const memories = stmt.all(...memoryIds);
-
-    return memories.map(m => m.content);
-}
 
 module.exports = {
     initialize,
