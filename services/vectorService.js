@@ -1,39 +1,14 @@
+const { connect } = require("vectordb");
 const { getDb } = require("./database");
 const { ollamaGenerateEmbedding } = require("./ollama");
 const logger = require("./logger");
+const path = require("path");
 
 const EMBEDDING_MODEL = "nomic-embed-text";
-let chromaClientPromise;
-
-async function getChromaClient() {
-  if (!chromaClientPromise) {
-    chromaClientPromise = import("chromadb")
-      .then((module) => {
-        const Client = module.ChromaClient || module.default?.ChromaClient;
-        if (!Client) {
-          throw new Error("ChromaClient export missing");
-        }
-        return new Client();
-      })
-      .catch((error) => {
-        logger.warn("ChromaDB unavailable; vector features disabled.", {
-          error: error.message,
-        });
-        return null;
-      });
-  }
-
-  return chromaClientPromise;
-}
+const DB_DIR = path.join(__dirname, "..", ".lancedb");
 
 // --- Helper Functions ---
 
-/**
- * Recursively traverses a JSON object and splits it into text chunks.
- * @param {object} obj The object to chunk.
- * @param {string} prefix A prefix for nested keys.
- * @returns {string[]} An array of text chunks.
- */
 function chunkObject(obj, prefix = "") {
   let chunks = [];
   for (const key in obj) {
@@ -52,11 +27,6 @@ function chunkObject(obj, prefix = "") {
   return chunks;
 }
 
-/**
- * Generates embeddings for a list of documents in parallel.
- * @param {string[]} documents Array of text documents.
- * @returns {Promise<number[][]>} A promise that resolves to an array of embeddings.
- */
 async function generateEmbeddings(documents) {
     if (!documents || documents.length === 0) return [];
     const embeddingPromises = documents.map(doc =>
@@ -66,14 +36,20 @@ async function generateEmbeddings(documents) {
     return responses.map(res => res.embedding);
 }
 
+async function getTable(personaId) {
+    const db = await connect(DB_DIR);
+    const tables = await db.tableNames();
+    if (!tables.includes(personaId)) {
+        const initialVector = await generateEmbeddings(["initial"]);
+        return await db.createTable(personaId, [{ vector: initialVector[0], text: "initial", type: "initial", id: "0" }]);
+    }
+    return await db.openTable(personaId);
+}
+
 // --- Main Service Functions ---
 
-/**
- * Initializes the vector database non-destructively.
- * It checks for existing data and only indexes if a collection is empty.
- */
 async function initialize() {
-  logger.info("Vector service initializing...");
+  logger.info("Vector service initializing (LanceDB)...");
   try {
     const client = await getChromaClient();
     if (!client) {
@@ -84,9 +60,9 @@ async function initialize() {
     logger.info(`Checking indices for ${personas.length} personas.`);
 
     for (const persona of personas) {
-      const collection = await client.getOrCreateCollection({ name: persona.id });
-      const count = await collection.count();
-      if (count === 0) {
+      const table = await getTable(persona.id);
+      const count = await table.countRows();
+      if (count <= 1) { // Only initial data
         logger.info(`Collection for ${persona.id} is empty. Performing full index.`);
         await indexFullPersona(persona.id);
       }
@@ -97,45 +73,37 @@ async function initialize() {
   }
 }
 
-/**
- * (Re)Indexes all data for a persona. Used for initialization.
- * @param {string} personaId The ID of the persona.
- */
 async function indexFullPersona(personaId) {
     const db = getDb();
-    const client = await getChromaClient();
-    if (!client) {
-        return;
-    }
-    const collection = await client.getOrCreateCollection({ name: personaId });
+    const table = await getTable(personaId);
 
-    // Index static data
     const staticDocs = getStaticDocs(db, personaId);
     if (staticDocs.length > 0) {
         const staticEmbeddings = await generateEmbeddings(staticDocs);
-        const staticIds = staticDocs.map((_, i) => `static_${i}`);
-        const staticMetadatas = staticDocs.map(() => ({ type: "static" }));
-        await collection.add({ ids: staticIds, embeddings: staticEmbeddings, documents: staticDocs, metadatas: staticMetadatas });
+        const data = staticDocs.map((doc, i) => ({
+            vector: staticEmbeddings[i],
+            text: doc,
+            type: "static",
+            id: `static_${i}`
+        }));
+        await table.add(data);
     }
 
-    // Index conversation data
     const convo = db.prepare("SELECT id, role, content FROM conversations WHERE persona_id = ?").all(personaId);
-    const convoDocs = convo.map(msg => `${msg.role}: ${msg.content}`);
-    if (convoDocs.length > 0) {
+    if (convo.length > 0) {
+        const convoDocs = convo.map(msg => `${msg.role}: ${msg.content}`);
         const convoEmbeddings = await generateEmbeddings(convoDocs);
-        const convoIds = convo.map(msg => `msg_${msg.id}`);
-        const convoMetadatas = convo.map(() => ({ type: "conversation" }));
-        await collection.add({ ids: convoIds, embeddings: convoEmbeddings, documents: convoDocs, metadatas: convoMetadatas });
+        const data = convo.map((msg, i) => ({
+            vector: convoEmbeddings[i],
+            text: convoDocs[i],
+            type: "conversation",
+            id: `msg_${msg.id}`
+        }));
+        await table.add(data);
     }
     logger.info(`Completed full index for persona: ${personaId}`);
 }
 
-/**
- * Helper to get static documents for a persona.
- * @param {*} db The database instance.
- * @param {string} personaId The persona ID.
- * @returns {string[]} Array of document strings.
- */
 function getStaticDocs(db, personaId) {
     const stmt = db.prepare(
         "SELECT c.data as character, r.data as relationship, o.data as outfit FROM personas p LEFT JOIN characters c ON p.id = c.persona_id LEFT JOIN relationships r ON p.id = r.persona_id LEFT JOIN outfits o ON p.id = o.persona_id WHERE p.id = ?"
@@ -150,10 +118,6 @@ function getStaticDocs(db, personaId) {
     return documents;
 }
 
-/**
- * Updates only the static character data in the vector store using metadata.
- * @param {string} personaId The ID of the persona to update.
- */
 async function updateStaticPersonaData(personaId) {
   logger.info(`Updating static data for persona: ${personaId}`);
   try {
@@ -162,19 +126,20 @@ async function updateStaticPersonaData(personaId) {
       return;
     }
     const db = getDb();
-    const collection = await client.getOrCreateCollection({ name: personaId });
-
-    // 1. Delete old static documents using metadata
-    await collection.delete({ where: { "type": "static" } });
+    const table = await getTable(personaId);
+    await table.delete('type = "static"');
     logger.info(`Deleted old static docs for persona ${personaId}.`);
 
-    // 2. Get, chunk, and index new static data
     const documents = getStaticDocs(db, personaId);
     if (documents.length > 0) {
         const embeddings = await generateEmbeddings(documents);
-        const ids = documents.map((_, i) => `static_${i}`);
-        const metadatas = documents.map(() => ({ type: "static" }));
-        await collection.add({ ids, embeddings, documents, metadatas });
+        const data = documents.map((doc, i) => ({
+            vector: embeddings[i],
+            text: doc,
+            type: "static",
+            id: `static_${i}`
+        }));
+        await table.add(data);
         logger.info(`Successfully indexed ${documents.length} new static documents for persona: ${personaId}`);
     }
   } catch (error) {
@@ -182,57 +147,33 @@ async function updateStaticPersonaData(personaId) {
   }
 }
 
-/**
- * Adds a single message from a conversation to the vector collection with a stable ID.
- * @param {string} personaId The ID of the persona.
- * @param {object} message The message object ({ id, role, content }).
- */
 async function addMessageToCollection(personaId, message) {
   try {
-    const client = await getChromaClient();
-    if (!client) {
-      return;
-    }
-    const collection = await client.getOrCreateCollection({ name: personaId });
+    const table = await getTable(personaId);
     const document = `${message.role}: ${message.content}`;
     const [embedding] = await generateEmbeddings([document]);
 
     if (embedding) {
-        await collection.add({
-            ids: [`msg_${message.id}`],
-            embeddings: [embedding],
-            documents: [document],
-            metadatas: [{ type: "conversation" }],
-        });
+        await table.add([{
+            vector: embedding,
+            text: document,
+            type: "conversation",
+            id: `msg_${message.id}`
+        }]);
     }
   } catch (error) {
     logger.error(`Failed to add message to collection for persona ${personaId}`, { error });
   }
 }
 
-/**
- * Queries the vector database to find relevant context.
- * @param {string} personaId The ID of the persona's conversation.
- * @param {string} userMessage The user's message.
- * @returns {Promise<string[]>} A list of relevant context snippets.
- */
 async function queryContext(personaId, userMessage) {
     try {
-        const client = await getChromaClient();
-        if (!client) {
-            return [];
-        }
-        const collection = await client.getOrCreateCollection({ name: personaId });
+        const table = await getTable(personaId);
         const [queryEmbedding] = await generateEmbeddings([userMessage]);
-
         if (!queryEmbedding) return [];
 
-        const results = await collection.query({
-            queryEmbeddings: [queryEmbedding],
-            nResults: 5,
-        });
-
-        return results.documents[0] || [];
+        const results = await table.search(queryEmbedding).limit(5).execute();
+        return results.map(r => r.text) || [];
     } catch (error) {
         logger.error(`Failed to query context for persona ${personaId}`, { error: error.message });
         return [];

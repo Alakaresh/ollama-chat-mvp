@@ -54,6 +54,7 @@ function chatRouter() {
     const context = await vectorService.queryContext(persona.id, userMessage);
 
     if (context.length > 0) {
+      logger.info("RAG context retrieved", { userMessage, context });
       const contextSystemMessage = `[Contexte pertinent récupéré pour cette conversation :\n${context.join("\n")}]`;
       finalMessages.push({ role: "system", content: contextSystemMessage });
     }
