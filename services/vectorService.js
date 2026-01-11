@@ -2,6 +2,7 @@ const { getDb } = require("./database");
 const { ollamaGenerateEmbedding } = require("./ollama");
 const logger = require("./logger");
 const path = require("path");
+const { createRequire } = require("module");
 
 const EMBEDDING_MODEL = "nomic-embed-text";
 const DB_DIR = path.join(__dirname, "..", ".lancedb");
@@ -11,6 +12,18 @@ let lanceDbLoadError;
 async function loadLanceDb() {
   if (lanceDbModule || lanceDbLoadError) {
     return lanceDbModule;
+  }
+
+  try {
+    const requireFromHere = createRequire(__filename);
+    requireFromHere.resolve("@lancedb/lancedb");
+  } catch (error) {
+    if (error && error.code === "MODULE_NOT_FOUND") {
+      lanceDbLoadError = new Error("LanceDB dependency is not installed.");
+      return null;
+    }
+    lanceDbLoadError = error;
+    return null;
   }
 
   return import("@lancedb/lancedb")
