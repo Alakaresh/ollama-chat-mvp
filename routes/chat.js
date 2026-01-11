@@ -33,10 +33,7 @@ function chatRouter() {
       persona.name,
       persona.nsfw
     );
-    const detailedPrompt = generateDetailedPrompt(persona);
-    const systemPrompt = [baseSystemPrompt, detailedPrompt]
-      .filter(Boolean)
-      .join("\n\n");
+    const systemPrompt = baseSystemPrompt;
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
