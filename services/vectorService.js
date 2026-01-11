@@ -1,10 +1,30 @@
-const { ChromaClient } = require("chromadb");
 const { getDb } = require("./database");
 const { ollamaGenerateEmbedding } = require("./ollama");
 const logger = require("./logger");
 
 const EMBEDDING_MODEL = "nomic-embed-text";
-const client = new ChromaClient();
+let chromaClientPromise;
+
+async function getChromaClient() {
+  if (!chromaClientPromise) {
+    chromaClientPromise = import("chromadb")
+      .then((module) => {
+        const Client = module.ChromaClient || module.default?.ChromaClient;
+        if (!Client) {
+          throw new Error("ChromaClient export missing");
+        }
+        return new Client();
+      })
+      .catch((error) => {
+        logger.warn("ChromaDB unavailable; vector features disabled.", {
+          error: error.message,
+        });
+        return null;
+      });
+  }
+
+  return chromaClientPromise;
+}
 
 // --- Helper Functions ---
 
@@ -55,6 +75,10 @@ async function generateEmbeddings(documents) {
 async function initialize() {
   logger.info("Vector service initializing...");
   try {
+    const client = await getChromaClient();
+    if (!client) {
+      return;
+    }
     const db = getDb();
     const personas = db.prepare("SELECT id FROM personas").all();
     logger.info(`Checking indices for ${personas.length} personas.`);
@@ -79,6 +103,10 @@ async function initialize() {
  */
 async function indexFullPersona(personaId) {
     const db = getDb();
+    const client = await getChromaClient();
+    if (!client) {
+        return;
+    }
     const collection = await client.getOrCreateCollection({ name: personaId });
 
     // Index static data
@@ -129,6 +157,10 @@ function getStaticDocs(db, personaId) {
 async function updateStaticPersonaData(personaId) {
   logger.info(`Updating static data for persona: ${personaId}`);
   try {
+    const client = await getChromaClient();
+    if (!client) {
+      return;
+    }
     const db = getDb();
     const collection = await client.getOrCreateCollection({ name: personaId });
 
@@ -157,6 +189,10 @@ async function updateStaticPersonaData(personaId) {
  */
 async function addMessageToCollection(personaId, message) {
   try {
+    const client = await getChromaClient();
+    if (!client) {
+      return;
+    }
     const collection = await client.getOrCreateCollection({ name: personaId });
     const document = `${message.role}: ${message.content}`;
     const [embedding] = await generateEmbeddings([document]);
@@ -182,6 +218,10 @@ async function addMessageToCollection(personaId, message) {
  */
 async function queryContext(personaId, userMessage) {
     try {
+        const client = await getChromaClient();
+        if (!client) {
+            return [];
+        }
         const collection = await client.getOrCreateCollection({ name: personaId });
         const [queryEmbedding] = await generateEmbeddings([userMessage]);
 
