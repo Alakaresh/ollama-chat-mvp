@@ -6,6 +6,9 @@ data.db
 data.db-wal
 data.db-shm
 chat.db
+chat.db-wal
+chat.db-shm
+.chroma/
 
 
 # Logs

@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const { getDb } = require("./services/database");
 const logger = require("./services/logger");
+const vectorService = require("./services/vectorService");
 
 const { modelsRouter } = require("./routes/models");
 const { chatRouter } = require("./routes/chat");
@@ -56,4 +57,5 @@ app.use("/api", personaRouter());
 
 const PORT = 8080;
 getDb();
+vectorService.initialize();
 app.listen(PORT, () => logger.info(`✅ Server: http://localhost:${PORT}`));
