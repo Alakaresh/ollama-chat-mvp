@@ -52,7 +52,7 @@ app.get("/api/config", (req, res) => {
 });
 
 app.use("/api/models", modelsRouter());
-app.use("/api", chatRouter()); // keep for streaming
+app.use("/api", chatRouter(appMode)); // keep for streaming
 app.use("/api", personaRouter());
 
 const PORT = 8080;

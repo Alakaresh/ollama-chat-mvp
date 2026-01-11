@@ -5,7 +5,7 @@ const { generateDetailedPrompt } = require("../services/promptBuilder");
 const logger = require("../services/logger");
 const vectorService = require("../services/vectorService");
 
-function chatRouter() {
+function chatRouter(appMode) {
   const router = express.Router();
 
   // POST /api/chat/stream { model, messages }
@@ -51,7 +51,7 @@ function chatRouter() {
     }
 
     const userMessage = messages[messages.length - 1].content;
-    const context = await vectorService.queryContext(persona.id, userMessage);
+    const context = await vectorService.queryContext(persona.id, userMessage, appMode);
 
     if (context.length > 0) {
       logger.info("RAG context retrieved", { userMessage, context });
