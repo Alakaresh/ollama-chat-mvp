@@ -1,4 +1,3 @@
-const { connect } = require("@lancedb/lancedb");
 const { getDb } = require("./database");
 const { ollamaGenerateEmbedding } = require("./ollama");
 const logger = require("./logger");
@@ -6,6 +5,28 @@ const path = require("path");
 
 const EMBEDDING_MODEL = "nomic-embed-text";
 const DB_DIR = path.join(__dirname, "..", ".lancedb");
+let lanceDbModule;
+let lanceDbLoadError;
+
+async function loadLanceDb() {
+  if (lanceDbModule || lanceDbLoadError) {
+    return lanceDbModule;
+  }
+
+  return import("@lancedb/lancedb")
+    .then((module) => {
+      lanceDbModule = module;
+      return module;
+    })
+    .catch((error) => {
+      lanceDbLoadError = error;
+      logger.error(
+        'LanceDB dependency is missing. Run "npm install" to enable vector search.',
+        { error: error.message }
+      );
+      return null;
+    });
+}
 
 // --- Helper Functions ---
 
@@ -37,7 +58,11 @@ async function generateEmbeddings(documents) {
 }
 
 async function getTable(personaId) {
-    const db = await connect(DB_DIR);
+    const lanceDb = await loadLanceDb();
+    if (!lanceDb) {
+      return null;
+    }
+    const db = await lanceDb.connect(DB_DIR);
     const tables = await db.tableNames();
     if (!tables.includes(personaId)) {
         const initialVector = await generateEmbeddings(["initial"]);
@@ -51,12 +76,20 @@ async function getTable(personaId) {
 async function initialize() {
   logger.info("Vector service initializing (LanceDB)...");
   try {
+    const lanceDb = await loadLanceDb();
+    if (!lanceDb) {
+      logger.warn("Vector service disabled: LanceDB dependency unavailable.");
+      return;
+    }
     const db = getDb();
     const personas = db.prepare("SELECT id FROM personas").all();
     logger.info(`Checking indices for ${personas.length} personas.`);
 
     for (const persona of personas) {
       const table = await getTable(persona.id);
+      if (!table) {
+        return;
+      }
       const count = await table.countRows();
       if (count <= 1) { // Only initial data
         logger.info(`Collection for ${persona.id} is empty. Performing full index.`);
@@ -72,6 +105,9 @@ async function initialize() {
 async function indexFullPersona(personaId) {
     const db = getDb();
     const table = await getTable(personaId);
+    if (!table) {
+      return;
+    }
 
     const staticDocs = getStaticDocs(db, personaId);
     if (staticDocs.length > 0) {
@@ -119,6 +155,9 @@ async function updateStaticPersonaData(personaId) {
   try {
     const db = getDb();
     const table = await getTable(personaId);
+    if (!table) {
+      return;
+    }
     await table.delete('type = "static"');
     logger.info(`Deleted old static docs for persona ${personaId}.`);
 
@@ -142,6 +181,9 @@ async function updateStaticPersonaData(personaId) {
 async function addMessageToCollection(personaId, message) {
   try {
     const table = await getTable(personaId);
+    if (!table) {
+      return;
+    }
     const document = `${message.role}: ${message.content}`;
     const [embedding] = await generateEmbeddings([document]);
 
@@ -161,6 +203,9 @@ async function addMessageToCollection(personaId, message) {
 async function queryContext(personaId, userMessage) {
     try {
         const table = await getTable(personaId);
+        if (!table) {
+          return [];
+        }
         const [queryEmbedding] = await generateEmbeddings([userMessage]);
         if (!queryEmbedding) return [];
 
