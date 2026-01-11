@@ -20,10 +20,6 @@ async function loadLanceDb() {
     })
     .catch((error) => {
       lanceDbLoadError = error;
-      logger.error(
-        'LanceDB dependency is missing. Run "npm install" to enable vector search.',
-        { error: error.message }
-      );
       return null;
     });
 }
@@ -78,7 +74,10 @@ async function initialize() {
   try {
     const lanceDb = await loadLanceDb();
     if (!lanceDb) {
-      logger.warn("Vector service disabled: LanceDB dependency unavailable.");
+      logger.warn(
+        'Vector service disabled: LanceDB dependency unavailable. Run "npm install" to enable vector search.',
+        { error: lanceDbLoadError ? lanceDbLoadError.message : "Unknown error" }
+      );
       return;
     }
     const db = getDb();
