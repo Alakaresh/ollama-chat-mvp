@@ -10,8 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@lancedb/lancedb": "^0.21.2",
     "better-sqlite3": "^12.5.0",
-    "vectordb": "^0.21.2",
     "express": "^5.2.1"
   }
 }
