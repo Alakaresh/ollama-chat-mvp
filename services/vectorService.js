@@ -165,7 +165,7 @@ async function searchMemories({ queryText, persona_id, k = 5, type = null }) {
                      .where(`persona_id = '${persona_id}'`)
                      .limit(k);
 
-    const results = await query.execute();
+    const results = await query.toArray();
 
     // The LanceDB Node.js SDK doesn't support complex WHERE clauses yet.
     // We'll have to do the type filtering manually after the initial search.
