@@ -51,6 +51,10 @@ async function getTable(personaId) {
 async function initialize() {
   logger.info("Vector service initializing (LanceDB)...");
   try {
+    const client = await getChromaClient();
+    if (!client) {
+      return;
+    }
     const db = getDb();
     const personas = db.prepare("SELECT id FROM personas").all();
     logger.info(`Checking indices for ${personas.length} personas.`);
@@ -117,6 +121,10 @@ function getStaticDocs(db, personaId) {
 async function updateStaticPersonaData(personaId) {
   logger.info(`Updating static data for persona: ${personaId}`);
   try {
+    const client = await getChromaClient();
+    if (!client) {
+      return;
+    }
     const db = getDb();
     const table = await getTable(personaId);
     await table.delete('type = "static"');
