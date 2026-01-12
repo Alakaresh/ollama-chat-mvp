@@ -17,7 +17,7 @@ def run_test():
         # Démarrer le serveur en arrière-plan
         server = subprocess.Popen(["node", "server.js"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print("Serveur démarré...")
-        time.sleep(5) # Laisser le temps au serveur de s'initialiser
+        time.sleep(10) # Laisser le temps au serveur de s'initialiser
 
         with sync_playwright() as p:
             browser = p.chromium.launch()
