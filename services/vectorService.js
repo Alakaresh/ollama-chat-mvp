@@ -89,11 +89,46 @@ async function initialize() {
             table = await db.openTable('vectors');
         }
         logger.info('Vector service initialized successfully.');
+        await synchronizePersonaData();
         await synchronize();
     } catch (error) {
         logger.error('Failed to initialize LanceDB', { error });
         vectorSearchEnabled = false;
         logger.warn('Vector search disabled due to initialization failure.');
+    }
+}
+
+async function synchronizePersonaData() {
+    logger.info('Synchronizing persona data to memories table...');
+    const sqlite = getDb();
+    try {
+        const transaction = sqlite.transaction(() => {
+            // Clear old persona traits to avoid duplicates
+            sqlite.prepare(`DELETE FROM memories WHERE type = 'static_persona'`).run();
+
+            const tables = ['characters', 'relationships', 'outfits'];
+            const insertStmt = sqlite.prepare(`
+                INSERT INTO memories (persona_id, type, content) VALUES (?, 'static_persona', ?)
+            `);
+
+            let traitsIndexed = 0;
+            for (const table of tables) {
+                const rows = sqlite.prepare(`SELECT persona_id, data FROM ${table}`).all();
+                for (const row of rows) {
+                    const data = JSON.parse(row.data);
+                    if (data.dynamic_traits && Array.isArray(data.dynamic_traits)) {
+                        for (const trait of data.dynamic_traits) {
+                            insertStmt.run(row.persona_id, trait);
+                            traitsIndexed++;
+                        }
+                    }
+                }
+            }
+            logger.info(`Indexed ${traitsIndexed} dynamic persona traits into memories.`);
+        });
+        transaction();
+    } catch (error) {
+        logger.error('Failed to synchronize persona data into memories table.', { error });
     }
 }
 
@@ -167,19 +202,21 @@ async function searchMemories({ queryText, persona_id, k = 5, type = null }) {
 
     const results = await query.toArray();
 
-    // The LanceDB Node.js SDK doesn't support complex WHERE clauses yet.
-    // We'll have to do the type filtering manually after the initial search.
     const memoryIds = results.map(r => r.id);
     if (memoryIds.length === 0) return [];
 
     const sqlite = getDb();
     const placeholders = memoryIds.map(() => '?').join(',');
     let sqlQuery = `SELECT id, content, type FROM memories WHERE id IN (${placeholders})`;
-    const params = [...memoryIds];
+    let params = [...memoryIds];
 
     if (type) {
-        sqlQuery = `SELECT id, content, type FROM memories WHERE id IN (${placeholders}) AND type = ?`;
-        params.push(type);
+        const types = Array.isArray(type) ? type : [type];
+        if (types.length > 0) {
+            const typePlaceholders = types.map(() => '?').join(',');
+            sqlQuery += ` AND type IN (${typePlaceholders})`;
+            params.push(...types);
+        }
     }
 
     const stmt = sqlite.prepare(sqlQuery);

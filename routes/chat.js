@@ -1,8 +1,8 @@
 const express = require("express");
 const { ollamaChatOnce, ollamaChatStream } = require("../services/ollama");
 const { buildSystemPrompt, processAssistantOutput } = require("../services/globalStyle");
-const { generateDetailedPrompt } = require("../services/promptBuilder");
 const { searchMemories, addMemory } = require("../services/vectorService");
+const { getDb } = require("../services/database");
 const logger = require("../services/logger");
 
 function chatRouter() {
@@ -33,22 +33,44 @@ function chatRouter() {
       persona.name,
       persona.nsfw
     );
-    const detailedPrompt = generateDetailedPrompt(persona);
-    let systemPrompt = [baseSystemPrompt, detailedPrompt]
+
+    // Dynamic Persona Context Loading
+    const db = getDb();
+    const charStmt = db.prepare("SELECT data FROM characters WHERE persona_id = ?");
+    const relStmt = db.prepare("SELECT data FROM relationships WHERE persona_id = ?");
+    const outfitStmt = db.prepare("SELECT data FROM outfits WHERE persona_id = ?");
+
+    const charData = charStmt.get(persona.id);
+    const relData = relStmt.get(persona.id);
+    const outfitData = outfitStmt.get(persona.id);
+
+    const coreContexts = [];
+    if (charData) coreContexts.push(JSON.parse(charData.data).core_context);
+    if (relData) coreContexts.push(JSON.parse(relData.data).core_context);
+    if (outfitData) coreContexts.push(JSON.parse(outfitData.data).core_context);
+
+    const personaContext = coreContexts.length > 0
+      ? `\n\n[PERSONA CONTEXT]\n${JSON.stringify(coreContexts.filter(Boolean), null, 2)}\n[/PERSONA CONTEXT]`
+      : "";
+
+    let systemPrompt = [baseSystemPrompt, personaContext]
       .filter(Boolean)
       .join("\n\n");
 
-    // RAG - Step 1: Search for relevant memories
+    // RAG - Step 1: Search for relevant memories (conversation + persona traits)
     const userMessage = messages[messages.length - 1].content;
-    const memories = await searchMemories({ queryText: userMessage, persona_id: persona.id });
+    const memories = await searchMemories({
+      queryText: userMessage,
+      persona_id: persona.id,
+      type: ['conversation', 'static_persona'],
+      k: 10
+    });
 
     if (memories.length > 0) {
       const memoryBlock = `
---- LONG-TERM MEMORY ---
-Here is a list of potentially relevant memories, in order of relevance. Use them to enrich your response and maintain consistency.
-
+--- DYNAMIC MEMORY (most relevant first) ---
 ${memories.map(m => `- ${m}`).join('\n')}
---- END OF MEMORY ---
+--- END OF DYNAMIC MEMORY ---
       `;
       systemPrompt += `\n\n${memoryBlock}`;
     }
